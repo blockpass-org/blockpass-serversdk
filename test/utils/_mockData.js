@@ -12,6 +12,16 @@ module.exports.KYCModel = [
         }
     },
     {
+        _id: '5abbcc8160f9ab2c5a7801ef',
+        status: 'waiting',
+        blockPassID: '1522257024960',
+        bpToken: {
+            "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJCTE9DS1BBU1MiLCJzdWIiOiI1YWQ4NjIyNDBhMTc2NzIyZjI1ZmVkZTIiLCJhdWQiOiIzcmRfc2VydmljZV9kZW1vIiwiZXhwIjoxNTI0NDMzMTM5LCJpYXQiOjE1MjQxOTcxMzksImp0aSI6IjU0NjY5NzAxZjY1YTg4NzllNDUwNzdiZTcwYTg0MzgyIn0.LVDTfo19N_L_YQ7d1AGlUYdYy_iUNqz4nxwDa5cSRvQ",
+            "expires_in": new Date("3018-04-20T05:05:40.588Z"),
+            "refresh_token": "54669701f65a8879e45077be70a84382"
+        }
+    },
+    {
         "_id": "5ad967142219d02223ae44b2",
         "bpToken": {
             "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJCTE9DS1BBU1MiLCJzdWIiOiI1YWQ4NjIyNDBhMTc2NzIyZjI1ZmVkZTIiLCJhdWQiOiIzcmRfc2VydmljZV9kZW1vIiwiZXhwIjoxNTI0NDMzMTM5LCJpYXQiOjE1MjQxOTcxMzksImp0aSI6IjU0NjY5NzAxZjY1YTg4NzllNDUwNzdiZTcwYTg0MzgyIn0.LVDTfo19N_L_YQ7d1AGlUYdYy_iUNqz4nxwDa5cSRvQ",

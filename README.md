@@ -22,7 +22,6 @@ $ npm run major # bump major version and publish to npm e.g. 1.0.0
 
 #### Table of Contents
 
--   [sayHello](#sayhello)
 -   [loginFow](#loginfow)
 -   [updateDataFlow](#updatedataflow)
 -   [registerFlow](#registerflow)
@@ -38,16 +37,6 @@ $ npm run major # bump major version and publish to npm e.g. 1.0.0
 -   [kycProfile](#kycprofile)
 -   [kycToken](#kyctoken)
 -   [validateField](#validatefield)
-
-### sayHello
-
-This function says hello.
-
-**Parameters**
-
--   `name` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** Some name to say hello for.
-
-Returns **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** The hello.
 
 ### loginFow
 
@@ -156,6 +145,7 @@ Type: [Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Globa
 
 **Properties**
 
+-   `baseUrl` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : Blockpass Api Url
 -   `clientId` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : CliendId(from developer dashboard)
 -   `secretId` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : SecretId(from developer dashboard)
 -   `requiredFields` **\[[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)]** : Required identities fields(from developer dashboard)

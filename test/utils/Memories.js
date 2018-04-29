@@ -25,7 +25,7 @@ class KYCModel {
     }
 
     static reset() {
-        KYCModel.DB = JSON.parse(JSON.stringify(DB))
+        KYCModel.DB = DB.map(itm => new KYCModel(itm))
     }
 }
 

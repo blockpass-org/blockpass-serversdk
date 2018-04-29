@@ -38,7 +38,8 @@
     "build": "src"
   },
   "jest": {
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "collectCoverageFrom":["src/**"]
   },
   "dependencies": {
     "jsonwebtoken": "^8.2.1",
