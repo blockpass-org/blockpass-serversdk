@@ -6,7 +6,3 @@ const api = {
     GET_PROOF_OF_PATH: '/api/v0.3/service/getProof',
 }
 module.exports.api = api;
-
-module.exports.baseUrl = function() {
-    return process.env.BLOCKPASS_BASE_URL
-}

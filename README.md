@@ -23,6 +23,21 @@ $ npm run major # bump major version and publish to npm e.g. 1.0.0
 #### Table of Contents
 
 -   [sayHello](#sayhello)
+-   [loginFow](#loginfow)
+-   [updateDataFlow](#updatedataflow)
+-   [registerFlow](#registerflow)
+-   [signCertificate](#signcertificate)
+-   [rejectCertificate](#rejectcertificate)
+-   [queryProofOfPath](#queryproofofpath)
+-   [ConstructorParams](#constructorparams)
+-   [findKycByIdCallback](#findkycbyidcallback)
+-   [createKycCallback](#createkyccallback)
+-   [updateKycCallback](#updatekyccallback)
+-   [needRecheckExitingKycCallback](#needrecheckexitingkyccallback)
+-   [generateSsoPayloadCallback](#generatessopayloadcallback)
+-   [kycProfile](#kycprofile)
+-   [kycToken](#kyctoken)
+-   [validateField](#validatefield)
 
 ### sayHello
 
@@ -33,6 +48,223 @@ This function says hello.
 -   `name` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** Some name to say hello for.
 
 Returns **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** The hello.
+
+### loginFow
+
+Login Flow. Which handle SSO and AppLink login from Blockpass client.
+
+ Step 1: Handshake between our service and BlockPass
+ Step 2: Sync Userprofile with Blockpass Db
+ Step 3: Base on blockpassId. Some situation below covered 
+     \- register success ( exiting kyc already fill and validated )
+     \- need update user raw data (kyc record)
+     \- need user re-upload infomation ( some fields change / periodic check )
+
+**Parameters**
+
+-   `$0` **any** 
+    -   `$0.code`  
+    -   `$0.sessionCode`  
+-   `code` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : blockpass access code (from blockpass client)
+-   `sessionCode` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : sso sessionCode
+
+Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;BlockpassMobileResponsePayload>** 
+
+### updateDataFlow
+
+Recieve user raw data and fill-up kycRecord
+
+-   Step1: restore accessToken
+-   Step2: validate required fields provided by client vs serviceMetaData(required / optional)
+-   Step3: Trying to matching kycData base on (kyc + bpId). Handle your logic in updateKyc
+-   Example Advance Scenarios:
+    -   email / phone already used in 2 different records => conclict case should return error
+    -   user already register. Now update user data fields => revoke certificate
+
+**Parameters**
+
+-   `$0` **any** 
+    -   `$0.accessToken`  
+    -   `$0.slugList`  
+    -   `$0.userRawData` **...any** 
+-   `accessToken` **sessionToken** : Store encoded data from /login or /register api
+-   `slugList` **\[[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)]** : List of identities field supplied by blockpass client
+-   `userRawData` **[Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)** : User raw data from multiform/parts request. Following format below
+    Example: ```json
+    {
+     "phone": { type: 'string', value:'09xxx'},
+     "selfie": { type: 'file', buffer: Buffer(..), originalname: 'fileOriginalName'}
+     ....
+    }
+    ```
+
+Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;BlockpassMobileResponsePayload>** 
+
+### registerFlow
+
+Register fow. Recieved user sign-up infomation and create KycProcess.
+Basically this flow processing same as loginFlow. The main diffrence is without sessionCode input
+
+**Parameters**
+
+-   `code` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** :
+    -   `code.code`  
+
+Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;BlockpassMobileResponsePayload>** 
+
+### signCertificate
+
+Sign Certificate and send to blockpass
+
+**Parameters**
+
+-   `param0` **any** 
+    -   `param0.id`  
+    -   `param0.kycRecord`  
+
+Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[boolean](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean)>** 
+
+### rejectCertificate
+
+Reject Certificate
+
+**Parameters**
+
+-   `$0` **any** 
+    -   `$0.id`  
+    -   `$0.reason`  
+-   `profileId` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** 
+-   `message` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : Reasone reject(this message will be sent to client)
+
+Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[boolean](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean)>** 
+
+### queryProofOfPath
+
+Query Merkle proof of path for given slugList
+
+**Parameters**
+
+-   `$0` **any** 
+    -   `$0.kycToken`  
+    -   `$0.slugList`  
+-   `kycToken` **[kycToken](#kyctoken)** 
+-   `slugList` **\[[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)]** 
+
+### ConstructorParams
+
+Type: [Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)
+
+**Properties**
+
+-   `clientId` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : CliendId(from developer dashboard)
+-   `secretId` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : SecretId(from developer dashboard)
+-   `requiredFields` **\[[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)]** : Required identities fields(from developer dashboard)
+-   `optionalFields` **\[[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)]** : Optional identities fields(from developer dashboard)
+-   `findKycById` **[findKycByIdCallback](#findkycbyidcallback)** : Find KycRecord by id
+-   `createKyc` **[createKycCallback](#createkyccallback)** : Create new KycRecord
+-   `updateKyc` **[updateKycCallback](#updatekyccallback)** : Update Kyc
+-   `needRecheckExitingKyc` **[needRecheckExitingKycCallback](#needrecheckexitingkyccallback)?** : Performing logic to check exiting kycRecord need re-submit data
+-   `generateSsoPayload` **[generateSsoPayloadCallback](#generatessopayloadcallback)?** : Return sso payload
+
+### findKycByIdCallback
+
+Query Kyc record by Id
+
+Type: [Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)
+
+**Parameters**
+
+-   `kycId` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** 
+
+Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;KycRecord>** Kyc Record
+
+### createKycCallback
+
+KYC create handler. Create new KycRecord
+
+Type: [Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)
+
+**Parameters**
+
+-   `kycProfile` **[kycProfile](#kycprofile)** 
+
+Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;KycRecord>** Kyc Record
+
+### updateKycCallback
+
+KYC Update handler. Update KycRecord
+
+Type: [Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)
+
+**Parameters**
+
+-   `kycRecord` **kycRecord** 
+-   `kycProfile` **[kycProfile](#kycprofile)** 
+-   `kycToken` **[kycToken](#kyctoken)** 
+-   `userRawData` **[Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)** 
+
+Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;KycRecord>** Kyc Record
+
+### needRecheckExitingKycCallback
+
+Check need to update new info for exiting Kyc record
+
+Type: [Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)
+
+**Parameters**
+
+-   `kycRecord` **kycRecord** 
+-   `kycProfile` **[kycProfile](#kycprofile)** 
+-   `payload` **[Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)** 
+
+Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)>** Payload return to client
+
+### generateSsoPayloadCallback
+
+Check need to update new info for exiting Kyc record
+
+Type: [Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)
+
+**Parameters**
+
+-   `kycRecord` **kycRecord** 
+-   `kycProfile` **[kycProfile](#kycprofile)** 
+-   `kycToken` **[kycToken](#kyctoken)** 
+-   `payload` **[Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)** 
+
+Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)>** Payload return to client
+
+### kycProfile
+
+KYC Profile Object
+
+Type: [Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)
+
+**Properties**
+
+-   `id` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : Udid of kycProfile (assigned by blockpass)
+-   `smartContractId` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : SmartContract user ID ( using to validate rootHash via Sc)
+-   `rootHash` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : Currently Root Hash
+
+### kycToken
+
+Type: [Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)
+
+**Properties**
+
+-   `access_token` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : AccessToken string
+-   `expires_in` **[Number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number)** : Expired time in seconds
+-   `refresh_token` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : Refresh token
+
+### validateField
+
+Validate fields base onf proof of path
+
+**Parameters**
+
+-   `rootHash` **[String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** Root hash
+-   `fieldRawData` **([String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String) \| [Buffer](https://nodejs.org/api/buffer.html))** Raw data of field
+-   `proofPath` **[Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)** Proof Path
 
 ## License
 

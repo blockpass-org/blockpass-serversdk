@@ -1,5 +1,5 @@
 const nock = require('nock')
-const api = require('../config').api
+const api = require('../../src/lib/config').api
 
 module.exports.clearAll = function () {
     nock.cleanAll()
