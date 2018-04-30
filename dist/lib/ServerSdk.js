@@ -379,8 +379,8 @@ module.exports = ServerSdk;
  * @property {ServerSdk#updateKycHandler} updateKyc: Update Kyc
  * @property {ServerSdk#needRecheckExitingKycHandler} [needRecheckExitingKyc]: Performing logic to check exiting kycRecord need re-submit data
  * @property {ServerSdk#generateSsoPayloadHandler} [generateSsoPayload]: Return sso payload
- * @property {function(object) => string} [encodeSessionData]: Encode sessionData to string
- * @property {function(string) => object} [decodeSessionData]: Decode sessionData from string
+ * @property {function(object) : string} [encodeSessionData]: Encode sessionData to string
+ * @property {function(string) : object} [decodeSessionData]: Decode sessionData from string
  */
 
 /**

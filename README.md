@@ -354,6 +354,8 @@ Type: [Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Globa
 -   `updateKyc` **[ServerSdk#updateKycHandler](#serversdkupdatekychandler)** : Update Kyc
 -   `needRecheckExitingKyc` **[ServerSdk#needRecheckExitingKycHandler](#serversdkneedrecheckexitingkychandler)?** : Performing logic to check exiting kycRecord need re-submit data
 -   `generateSsoPayload` **[ServerSdk#generateSsoPayloadHandler](#serversdkgeneratessopayloadhandler)?** : Return sso payload
+-   `encodeSessionData` **function ([object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)): [string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)?** : Encode sessionData to string
+-   `decodeSessionData` **function ([string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)): [object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)?** : Decode sessionData from string
 
 ### ServerSdk#findKycByIdHandler
 
