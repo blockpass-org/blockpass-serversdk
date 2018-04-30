@@ -39,11 +39,12 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "collectCoverageFrom":["src/**"]
+    "collectCoverageFrom": [
+      "src/**"
+    ]
   },
   "dependencies": {
     "jsonwebtoken": "^8.2.1",
-    "merkle": "^0.6.0",
     "superagent": "^3.8.2"
   },
   "devDependencies": {

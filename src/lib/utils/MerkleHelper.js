@@ -8,13 +8,6 @@ function _hash(value) {
     .digest("hex");
 }
 
-/**
- * Validate fields base onf proof of path
- * @constructor
- * @param {String} rootHash - Root hash
- * @param {String | Buffer} fieldRawData - Raw data of field
- * @param {Object} proofPath - Proof Path
- */
 module.exports.validateField = function(rootHash, fieldRawData, proofPath) {
   const rawHash = _hash(fieldRawData);
   const beginHash = _hash(rawHash + rawHash);
