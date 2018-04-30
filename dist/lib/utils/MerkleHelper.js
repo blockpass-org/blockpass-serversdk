@@ -1,13 +1,13 @@
+"use strict";
+
+const merkle = require("merkle");
 const crypto = require("crypto");
 
 function _hash(value) {
-  return crypto
-    .createHash("sha256")
-    .update(value)
-    .digest("hex");
+  return crypto.createHash("sha256").update(value).digest("hex");
 }
 
-module.exports.validateField = function(rootHash, fieldRawData, proofPath) {
+module.exports.validateField = function (rootHash, fieldRawData, proofPath) {
   const rawHash = _hash(fieldRawData);
   const beginHash = _hash(rawHash + rawHash);
 
