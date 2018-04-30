@@ -15,12 +15,13 @@ class ServerSdk {
   blockPassProvider: any;
   requiredFields: [string];
   optionalFields: [string];
-  encodeSessionData: ?(payload: object) => string;
-  decodeSessionData: ?(token: string) =>?object;
+  secretId: string;
+  encodeSessionData: ?(payload: any) => string;
+  decodeSessionData: ?(token: string) => ?Object;
 
   /**
-   * 
-   * @param {...ServerSdk#ConstructorParams} params 
+   *
+   * @param {...ServerSdk#ConstructorParams} params
    */
   constructor({
     baseUrl,
@@ -72,15 +73,15 @@ class ServerSdk {
    *
    *  - Step 1: Handshake between our service and BlockPass
    *  - Step 2: Sync KycProfile with Blockpass
-   *  - Step 3: Create / update kycRecord via handler 
+   *  - Step 3: Create / update kycRecord via handler
    */
   async loginFow({
     code,
     sessionCode
   }: {
-      code: string,
-      sessionCode: string
-    }): Promise<BlockpassMobileResponsePayload> {
+    code: string,
+    sessionCode: string
+  }): Promise<BlockpassMobileResponsePayload> {
     if (code == null || sessionCode == null)
       throw new Error("Missing code or sessionCode");
 
@@ -123,11 +124,11 @@ class ServerSdk {
       const ssoData = await Promise.resolve(
         this.generateSsoPayload
           ? this.generateSsoPayload({
-            kycProfile,
-            kycRecord,
-            kycToken,
-            payload
-          })
+              kycProfile,
+              kycRecord,
+              kycToken,
+              payload
+            })
           : {}
       );
       const res = await this.blockPassProvider.notifyLoginComplete(
@@ -161,10 +162,10 @@ class ServerSdk {
     slugList,
     ...userRawData
   }: {
-      accessToken: string,
-      slugList: [string],
-      userRawData: Object
-    }): Promise<BlockpassMobileResponsePayload> {
+    accessToken: string,
+    slugList: [string],
+    userRawData: Object
+  }): Promise<BlockpassMobileResponsePayload> {
     if (!slugList) throw new Error("Missing slugList");
 
     const decodeData = this._decodeDataFromToken(accessToken);
@@ -204,11 +205,11 @@ class ServerSdk {
       const ssoData = await Promise.resolve(
         this.generateSsoPayload
           ? this.generateSsoPayload({
-            kycProfile,
-            kycRecord,
-            kycToken,
-            payload
-          })
+              kycProfile,
+              kycRecord,
+              kycToken,
+              payload
+            })
           : {}
       );
       const res = await this.blockPassProvider.notifyLoginComplete(
@@ -232,8 +233,8 @@ class ServerSdk {
   async registerFlow({
     code
   }: {
-      code: string
-    }): Promise<BlockpassMobileResponsePayload> {
+    code: string
+  }): Promise<BlockpassMobileResponsePayload> {
     if (code == null) throw new Error("Missing code or sessionCode");
 
     const kycToken = await this.blockPassProvider.doHandShake(code);
@@ -284,9 +285,9 @@ class ServerSdk {
     id,
     kycRecord
   }: {
-      id: string,
-      kycRecord: KycRecord
-    }): Promise<boolean> {
+    id: string,
+    kycRecord: KycRecord
+  }): Promise<boolean> {
     // Todo: Implement in V2
     return false;
   }
@@ -299,9 +300,9 @@ class ServerSdk {
     profileId,
     message
   }: {
-      profileId: string,
-      message: string
-    }): Promise<boolean> {
+    profileId: string,
+    message: string
+  }): Promise<boolean> {
     // Todo: Implement in V2
     return false;
   }
@@ -314,9 +315,9 @@ class ServerSdk {
     kycToken,
     slugList
   }: {
-      kycToken: KycToken,
-      slugList: [string]
-    }) {
+    kycToken: KycToken,
+    slugList: [string]
+  }) {
     const res = await this.blockPassProvider.queryProofOfPath(
       kycToken,
       slugList
@@ -329,18 +330,18 @@ class ServerSdk {
     console.log("\x1b[32m%s\x1b[0m", "[info]", ...args);
   }
 
-  _encodeDataIntoToken(payload) {
+  _encodeDataIntoToken(payload: any): string {
     const { encodeSessionData } = this;
-    if (encodeSessionData) return encodeSessionData(payload)
+    if (encodeSessionData) return encodeSessionData(payload);
 
     return jwt.sign(payload, this.secretId);
   }
 
-  _decodeDataFromToken(accessToken) {
+  _decodeDataFromToken(accessToken: string): ?Object {
     try {
       const { decodeSessionData } = this;
-      if (decodeSessionData) return decodeSessionData(accessToken)
-      
+      if (decodeSessionData) return decodeSessionData(accessToken);
+
       return jwt.verify(accessToken, this.secretId);
     } catch (error) {
       return null;
@@ -367,9 +368,8 @@ module.exports = ServerSdk;
 
 /**
  * ------------------------------------------------------
- * 
+ *
  */
-
 
 /**
  * KYC Record Object
@@ -386,7 +386,9 @@ declare type ConstructorParams = {
   createKyc: any,
   updateKyc: any,
   needRecheckExitingKyc?: any,
-  generateSsoPayload?: any
+  generateSsoPayload?: any,
+  encodeSessionData?: any,
+  decodeSessionData?: any
 };
 /**
  * @typedef {Object} ServerSdk#ConstructorParams
@@ -415,7 +417,7 @@ declare type FindKycByIdHandler = (kycId: string) => Promise<KycRecord>;
 
 declare type CreateKycHandler = ({ kycProfile: KycProfile }) => Promise<
   KycRecord
-  >;
+>;
 /**
  * Create new KycRecord
  * @callback ServerSdk#createKycHandler
@@ -448,7 +450,7 @@ declare type ReCheckKycRecordHandler = ({
   payload: Object
 }) => Promise<Object>;
 /**
- * Performing check. Does need re-upload user data or not 
+ * Performing check. Does need re-upload user data or not
  * @callback ServerSdk#needRecheckExitingKycHandler
  * @async
  * @param {ServerSdk#kycRecord} kycRecord
@@ -529,18 +531,18 @@ declare type BlockpassMobileResponsePayload = {
  * @param {string} accessToken: Eencoded session data from /login or /register api
  * @param {[string]} slugList: List of identities field supplied by blockpass client
  * @param {...Object} userRawData: Rest parameters contain User raw data from multiform/parts request. Following format below:
- * 
+ *
  * @example
  * {
  *  // string fields
- *  "phone": { type: 'string', value:'09xxx'}, 
- *  
+ *  "phone": { type: 'string', value:'09xxx'},
+ *
  *  // buffer fields
  *  "selfie": { type: 'file', buffer: Buffer(..), originalname: 'fileOriginalName'}
- * 
+ *
  *  // certificate fields with `[cer]` prefix
  *  "[cer]onfido": {type: 'string', valur:'...'}
- *  
+ *
  *  ....
  * }
  */

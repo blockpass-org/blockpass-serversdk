@@ -474,14 +474,14 @@ Type: [Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Globa
 ```javascript
 {
  // string fields
- "phone": { type: 'string', value:'09xxx'}, 
- 
+ "phone": { type: 'string', value:'09xxx'},
+
  // buffer fields
  "selfie": { type: 'file', buffer: Buffer(..), originalname: 'fileOriginalName'}
 
  // certificate fields with `[cer]` prefix
  "[cer]onfido": {type: 'string', valur:'...'}
- 
+
  ....
 }
 ```

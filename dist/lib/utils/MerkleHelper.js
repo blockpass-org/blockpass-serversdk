@@ -1,6 +1,5 @@
 "use strict";
 
-const merkle = require("merkle");
 const crypto = require("crypto");
 
 function _hash(value) {

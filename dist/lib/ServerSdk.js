@@ -16,8 +16,8 @@ const merkleTreeHelper = require("./utils/MerkleHelper");
 class ServerSdk {
 
   /**
-   * 
-   * @param {...ServerSdk#ConstructorParams} params 
+   *
+   * @param {...ServerSdk#ConstructorParams} params
    */
   constructor({
     baseUrl,
@@ -65,7 +65,7 @@ class ServerSdk {
    *
    *  - Step 1: Handshake between our service and BlockPass
    *  - Step 2: Sync KycProfile with Blockpass
-   *  - Step 3: Create / update kycRecord via handler 
+   *  - Step 3: Create / update kycRecord via handler
    */
   loginFow({
     code,
@@ -340,18 +340,18 @@ class ServerSdk {
  * @param {string} accessToken: Eencoded session data from /login or /register api
  * @param {[string]} slugList: List of identities field supplied by blockpass client
  * @param {...Object} userRawData: Rest parameters contain User raw data from multiform/parts request. Following format below:
- * 
+ *
  * @example
  * {
  *  // string fields
- *  "phone": { type: 'string', value:'09xxx'}, 
- *  
+ *  "phone": { type: 'string', value:'09xxx'},
+ *
  *  // buffer fields
  *  "selfie": { type: 'file', buffer: Buffer(..), originalname: 'fileOriginalName'}
- * 
+ *
  *  // certificate fields with `[cer]` prefix
  *  "[cer]onfido": {type: 'string', valur:'...'}
- *  
+ *
  *  ....
  * }
  */
@@ -359,7 +359,7 @@ module.exports = ServerSdk;
 
 /**
  * ------------------------------------------------------
- * 
+ *
  */
 
 /**
@@ -411,7 +411,7 @@ module.exports = ServerSdk;
  */
 
 /**
- * Performing check. Does need re-upload user data or not 
+ * Performing check. Does need re-upload user data or not
  * @callback ServerSdk#needRecheckExitingKycHandler
  * @async
  * @param {ServerSdk#kycRecord} kycRecord

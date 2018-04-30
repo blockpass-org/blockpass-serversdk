@@ -207,6 +207,7 @@ class BlockpassHttpProvider {
         };
       } catch (error) {
         console.error(error);
+        return null;
       }
     })();
   }
