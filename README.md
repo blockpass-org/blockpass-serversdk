@@ -39,7 +39,8 @@ Example:
 ```
 
 ## Working Flow:
-<img src="./doc/flow.png"/>
+
+<img src="./doc/flow.png" style="width: 300px;" />
 
 ## Getting Started
 
