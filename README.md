@@ -40,7 +40,7 @@ Example:
 
 ## Working Flow:
 
-<img src="./doc/flow.png" style="width: 300px;" />
+<img src="./doc/flow.png" width="300" />
 
 ## Getting Started
 
