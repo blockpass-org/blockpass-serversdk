@@ -1,29 +1,45 @@
 # Blockpass Server SDK
 
 ## Terms:
+-   **Endpoints**:
+    - `/login`: SSO endpoints. Called by mobile app. Triggered by (scan qr code & Applink)
+    - `/register`: Registration or re-new certificate request(later). Triggred by press **Register** button on mobile app
+    - `/upload`: Upload user rawData. Triggered when **nextAction=upload** returned by `/login` or `/register`
 
--   KycProfile: User profile object return by Blockpass Api
--   KycToken: Access token object.Using for exchange data between services and blockpass api (each user will have difference token)
--   KycRecord: Object stored kyc data. Structure below is recommended
-    Example:
+-   **KycProfile**: User profile object return by Blockpass Api
+-   **KycToken**: Access token object.Using for exchange data between services and blockpass api (each user will have difference token)
+-   **KycRecord**: Object stored kyc data. Managed by Services. It should have 3 parts(BlockpassKycProfile + RawData + Service Extra Info)
+
+Example:
 
 ```javascript
 {
-    // kycProfile fields
+    //
+    //[Blockpass-KycProfile]
+    //
+
     blockpassId: 'service_udid',// udid of user ( unique for each services )
     kycToken: {...}, // kycToken for this user 
     rootHash: 'sha3-hash' // user root of merke tree
     isSynching: "syncing" | "complete" // status of smartcontract syncing
 
-    // Blockpass Raw-data
+    //
+    //[Blockpass-RawData]
+    //
+
     phone: xxx,
     email: yyy,
     [cer]onfido: '....', 
 
-    // Services additional data
+    //
+    //[Service Extra info]
+    //
     etherAddress: '....'
 }
 ```
+
+## Working Flow:
+<img src="./doc/flow.png"/>
 
 ## Getting Started
 
