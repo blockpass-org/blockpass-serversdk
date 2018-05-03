@@ -2,13 +2,13 @@
 
 ## Terms:
 -   **Endpoints**:
-    - `/login`: SSO endpoints. Called by mobile app. Triggered by (scan qr code & Applink)
-    - `/register`: Registration or re-new certificate request(later). Triggred by press **Register** button on mobile app
-    - `/upload`: Upload user rawData. Triggered when **nextAction=upload** returned by `/login` or `/register`
+    - `/login`: SSO endpoints. Called by mobile app. Triggered by scanning qr code or opening Applink
+    - `/register`: Registration or re-new certificate request (later). Triggred by pressing **Register** button on mobile application
+    - `/upload`: Upload user rawData. Triggered when mobile application receives **nextAction=upload** returned by `/login` or `/register`
 
 -   **KycProfile**: User profile object return by Blockpass Api
--   **KycToken**: Access token object.Using for exchange data between services and blockpass api (each user will have difference token)
--   **KycRecord**: Object stored kyc data. Managed by Services. It should have 3 parts(BlockpassKycProfile + RawData + Service Extra Info)
+-   **KycToken**: Access token object. Use to exchange data between Services and Blockpass API (each user will have different token)
+-   **KycRecord**: Object stored kyc data, managed by Services. It usually contains 3 parts(BlockpassKycProfile + RawData + Service Extra Info)
 
 Example:
 
@@ -40,7 +40,7 @@ Example:
 
 ## Working Flow:
 
-<img src="./doc/flow.png" width="300" />
+<img src="./doc/flow.svg" width="300" />
 
 ## Getting Started
 
@@ -49,8 +49,8 @@ Example:
     1.  `findKycById`: Find and return KycRecord
     2.  `createKyc`: Create new kycRecord
     3.  `updateKyc`: Update kycRecord
-    4.  `needRecheckExitingKyc`: Perform logic to request client re-submit data
-    5.  `generateSsoPayload`: Generate SSo payload ( this custom data will be sent to web-client )
+    4.  `needRecheckExistingKyc`: Perform logic to request client to re-submit data
+    5.  `generateSsoPayload`: Generate SSo payload (this custom data will be sent to web-client)
 
 ```javascript
 const sdk = new ServerSdk({
@@ -66,7 +66,7 @@ const sdk = new ServerSdk({
     findKycById: findKycById ,
     createKyc: createKyc,
     updateKyc: updateKyc,
-    needRecheckExitingKyc: needRecheckExitingKyc,
+    needRecheckExistingKyc: needRecheckExistingKyc,
     generateSsoPayload: generateSsoPayload
 })
 
@@ -128,7 +128,7 @@ async function updateKyc({
 
     const waitingJob = await Promise.all(jobs);
 
-    // [Advance] - Link kyc record with exiting user data in your database
+    // [Advance] - Link kyc record with existing user data in your database
     // Example: This email|phone contain in our database
 
     kycRecord.bpToken = kycToken
@@ -140,9 +140,9 @@ async function updateKyc({
 }
 
 //-------------------------------------------------------------------------
-// Perform checking on exiting kycRecord => generate nextAction for BlockpassClient
+// Perform checking on existing kycRecord => generate nextAction for BlockpassClient
 //-------------------------------------------------------------------------
-async function needRecheckExitingKyc({ kycProfile, kycRecord, payload }) {
+async function needRecheckExistingKyc({ kycProfile, kycRecord, payload }) {
 
     // Check kycRecord missing critical fields ( caused by previous upload error / server crash )
     const missingFields = kycRecord.missingCriticalFields()
@@ -231,7 +231,7 @@ $ npm run build # generate docs and transpile code
 -   [ServerSdk#findKycByIdHandler](#serversdkfindkycbyidhandler)
 -   [ServerSdk#createKycHandler](#serversdkcreatekychandler)
 -   [ServerSdk#updateKycHandler](#serversdkupdatekychandler)
--   [ServerSdk#needRecheckExitingKycHandler](#serversdkneedrecheckexitingkychandler)
+-   [ServerSdk#needRecheckExistingKycHandler](#serversdkneedrecheckexistingkychandler)
 -   [ServerSdk#generateSsoPayloadHandler](#serversdkgeneratessopayloadhandler)
 -   [ServerSdk#kycProfile](#serversdkkycprofile)
 -   [ServerSdk#kycToken](#serversdkkyctoken)
@@ -251,18 +251,18 @@ $ npm run build # generate docs and transpile code
     -   `params.findKycById`  
     -   `params.createKyc`  
     -   `params.updateKyc`  
-    -   `params.needRecheckExitingKyc`  
+    -   `params.needRecheckExistingKyc`  
     -   `params.generateSsoPayload`  
     -   `params.encodeSessionData`  
     -   `params.decodeSessionData`  
 
 #### loginFow
 
-Login Flow. Which handle SSO and AppLink login from Blockpass client.
+Login Flow, handling SSO and AppLink login from Blockpass client.
 
--   Step 1: Handshake between our service and BlockPass
+-   Step 1: Handshake between Service and BlockPass
 -   Step 2: Sync KycProfile with Blockpass
--   Step 3: Create / update kycRecord via handler
+-   Step 3: Create / Update kycRecord via handler
 
 **Parameters**
 
@@ -291,8 +291,7 @@ Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/
 
 #### registerFlow
 
-Register fow. Recieved user sign-up infomation and create KycProcess.
-Basically this flow processing same as loginFlow. The main diffrence is without sessionCode input
+Register flow, receiving user sign-up infomation and creating KycProcess. This behaves the same as loginFlow except for it does not require sessionCode input
 
 **Parameters**
 
@@ -303,7 +302,7 @@ Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/
 
 #### signCertificate
 
-Sign Certificate and send to blockpass
+Sign new Certificate and send to blockpass
 
 **Parameters**
 
@@ -315,7 +314,7 @@ Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/
 
 #### rejectCertificate
 
-Reject Certificate
+Reject a given Certificate
 
 **Parameters**
 
@@ -327,7 +326,7 @@ Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/
 
 #### queryProofOfPath
 
-Query Merkle proof of path for given slugList
+Query Merkle proof for a given slugList
 
 **Parameters**
 
@@ -337,7 +336,7 @@ Query Merkle proof of path for given slugList
 
 #### merkleProofCheckSingle
 
-Check merkle proof for invidual field
+Check Merkle proof for invidual field
 
 **Parameters**
 
@@ -369,14 +368,14 @@ Type: [Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Globa
 -   `findKycById` **[ServerSdk#findKycByIdHandler](#serversdkfindkycbyidhandler)** : Find KycRecord by id
 -   `createKyc` **[ServerSdk#createKycHandler](#serversdkcreatekychandler)** : Create new KycRecord
 -   `updateKyc` **[ServerSdk#updateKycHandler](#serversdkupdatekychandler)** : Update Kyc
--   `needRecheckExitingKyc` **[ServerSdk#needRecheckExitingKycHandler](#serversdkneedrecheckexitingkychandler)?** : Performing logic to check exiting kycRecord need re-submit data
+-   `needRecheckExistingKyc` **[ServerSdk#needRecheckExistingKycHandler](#serversdkneedrecheckexistingkychandler)?** : Performing logic to check existing kycRecord need re-submit data
 -   `generateSsoPayload` **[ServerSdk#generateSsoPayloadHandler](#serversdkgeneratessopayloadhandler)?** : Return sso payload
 -   `encodeSessionData` **function ([object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)): [string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)?** : Encode sessionData to string
 -   `decodeSessionData` **function ([string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)): [object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)?** : Decode sessionData from string
 
 ### ServerSdk#findKycByIdHandler
 
-Query Kyc record by Id
+Handler function to query Kyc record by Id
 
 Type: [Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)
 
@@ -388,7 +387,7 @@ Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/
 
 ### ServerSdk#createKycHandler
 
-Create new KycRecord
+Handler function to create new KycRecord
 
 Type: [Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)
 
@@ -400,7 +399,7 @@ Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/
 
 ### ServerSdk#updateKycHandler
 
-Update exiting KycRecord
+Handler function to update existing KycRecord
 
 Type: [Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)
 
@@ -413,9 +412,9 @@ Type: [Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Sta
 
 Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[ServerSdk#kycRecord](#serversdkkycrecord)>** Kyc Record
 
-### ServerSdk#needRecheckExitingKycHandler
+### ServerSdk#needRecheckExistingKycHandler
 
-Performing check. Does need re-upload user data or not
+Handler function return whether a KYC existing check is required
 
 Type: [Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)
 
@@ -429,7 +428,7 @@ Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/
 
 ### ServerSdk#generateSsoPayloadHandler
 
-Check need to update new info for exiting Kyc record
+Handler function to generate SSo payload
 
 Type: [Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)
 
@@ -464,7 +463,7 @@ Type: [Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Globa
 
 ### ServerSdk#BlockpassMobileResponsePayload
 
-Response payload for Blockpass mobile
+Response payload for Blockpass mobile app
 
 Type: [Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)
 
@@ -478,7 +477,7 @@ Type: [Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Globa
 
 ### ServerSdk#UploadDataRequest
 
-Upload data from Blockpass mobile
+Upload data from Blockpass mobile app
 
 Type: [Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)
 

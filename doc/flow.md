@@ -1,6 +1,6 @@
 graph TD
 O[/login or /register]-->A
-A{findKycById} -->|Exited| B{needRecheckExitingKyc}
+A{findKycById} -->|Existed| B{needRecheckExistingKyc}
 A -->|New|C(createKyc)
 
 

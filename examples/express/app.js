@@ -28,7 +28,7 @@ const serverSdk = new ServerSDK({
     findKycById: findKycById,
     createKyc: createKyc,
     updateKyc: updateKyc,
-    needRecheckExitingKyc: needRecheckExitingKyc,
+    needRecheckExistingKyc: needRecheckExistingKyc,
     generateSsoPayload: generateSsoPayload
 
 })
@@ -90,7 +90,7 @@ async function updateKyc({
     return await kycRecord.save()
 }
 
-async function needRecheckExitingKyc({ kycProfile, kycRecord, payload }) {
+async function needRecheckExistingKyc({ kycProfile, kycRecord, payload }) {
 
     return payload;
 }

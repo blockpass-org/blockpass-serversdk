@@ -67,7 +67,7 @@ async function updateKyc({
     return await kycRecord.save()
 }
 
-async function needRecheckExitingKyc({ kycProfile, kycRecord, payload }) {
+async function needRecheckExistingKyc({ kycProfile, kycRecord, payload }) {
 
     // if (!(kycRecord.fristName && kycRecord.phone && kycRecord.lastName))
     //     return {
@@ -100,7 +100,7 @@ function createIns({ find, create, update, reCheck, ssoPayload } = {}) {
         findKycById: findKycById || find,
         createKyc: createKyc || create,
         updateKyc: updateKyc || update,
-        needRecheckExitingKyc: needRecheckExitingKyc || reCheck,
+        needRecheckExistingKyc: needRecheckExistingKyc || reCheck,
         generateSsoPayload: generateSsoPayload || ssoPayload
     })
 }

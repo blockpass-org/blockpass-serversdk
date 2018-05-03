@@ -67,7 +67,7 @@ async function updateKyc({
     return await kycRecord.save()
 }
 
-async function needRecheckExitingKyc({ kycProfile, kycRecord, payload }) {
+async function needRecheckExistingKyc({ kycProfile, kycRecord, payload }) {
 
     if (!(kycRecord.phone))
         return {
@@ -99,7 +99,7 @@ function createIns({ find, create, update, reCheck, ssoPayload } = {}) {
         findKycById: findKycById || find,
         createKyc: createKyc || create,
         updateKyc: updateKyc || update,
-        needRecheckExitingKyc: needRecheckExitingKyc || reCheck,
+        needRecheckExistingKyc: needRecheckExistingKyc || reCheck,
         generateSsoPayload: generateSsoPayload || ssoPayload
     })
 }
@@ -189,7 +189,7 @@ describe("login", () => {
         blockpassApiMock.clearAll();
     })
 
-    it("login[exiting record]", async () => {
+    it("login[existing record]", async () => {
         const bpFakeUserId = '1522257024962';
         const sessionCode = '1xxx';
 
@@ -207,7 +207,7 @@ describe("login", () => {
         blockpassApiMock.clearAll();
     })
 
-    it("login[exiting record not full-fill] needRecheckExitingKyc return missing data", async () => {
+    it("login[existing record not full-fill] needRecheckExistingKyc return missing data", async () => {
         const bpFakeUserId = '1522257024960';
         const sessionCode = '1xxx';
 

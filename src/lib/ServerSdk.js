@@ -10,7 +10,7 @@ class ServerSdk {
   findKycById: FindKycByIdHandler;
   createKyc: CreateKycHandler;
   updateKyc: UpdateKycHandler;
-  needRecheckExitingKyc: ?ReCheckKycRecordHandler;
+  needRecheckExistingKyc: ?ReCheckKycRecordHandler;
   generateSsoPayload: ?GenerateSsoPayloadHandler;
   blockPassProvider: any;
   requiredFields: [string];
@@ -32,7 +32,7 @@ class ServerSdk {
     findKycById,
     createKyc,
     updateKyc,
-    needRecheckExitingKyc,
+    needRecheckExistingKyc,
     generateSsoPayload,
     encodeSessionData,
     decodeSessionData
@@ -52,7 +52,7 @@ class ServerSdk {
     this.findKycById = findKycById;
     this.createKyc = createKyc;
     this.updateKyc = updateKyc;
-    this.needRecheckExitingKyc = needRecheckExitingKyc;
+    this.needRecheckExistingKyc = needRecheckExistingKyc;
     this.generateSsoPayload = generateSsoPayload;
     this.encodeSessionData = encodeSessionData;
     this.decodeSessionData = decodeSessionData;
@@ -113,9 +113,9 @@ class ServerSdk {
       payload.nextAction = "none";
     }
 
-    if (kycRecord && this.needRecheckExitingKyc) {
+    if (kycRecord && this.needRecheckExistingKyc) {
       payload = await Promise.resolve(
-        this.needRecheckExitingKyc({ kycProfile, kycRecord, kycToken, payload })
+        this.needRecheckExistingKyc({ kycProfile, kycRecord, kycToken, payload })
       );
     }
 
@@ -185,7 +185,7 @@ class ServerSdk {
     const kycProfile = await this.blockPassProvider.doMatchingData(kycToken);
     if (kycProfile == null) throw new Error("Sync info failed");
 
-    // matching exiting record
+    // matching existing record
     kycRecord = await Promise.resolve(
       this.updateKyc({
         kycRecord,
@@ -262,9 +262,9 @@ class ServerSdk {
       payload.nextAction = "none";
     }
 
-    if (kycRecord && this.needRecheckExitingKyc) {
+    if (kycRecord && this.needRecheckExistingKyc) {
       payload = await Promise.resolve(
-        this.needRecheckExitingKyc({ kycProfile, kycRecord, kycToken, payload })
+        this.needRecheckExistingKyc({ kycProfile, kycRecord, kycToken, payload })
       );
     }
 
@@ -385,7 +385,7 @@ declare type ConstructorParams = {
   findKycById: any,
   createKyc: any,
   updateKyc: any,
-  needRecheckExitingKyc?: any,
+  needRecheckExistingKyc?: any,
   generateSsoPayload?: any,
   encodeSessionData?: any,
   decodeSessionData?: any
@@ -400,7 +400,7 @@ declare type ConstructorParams = {
  * @property {ServerSdk#findKycByIdHandler} findKycById: Find KycRecord by id
  * @property {ServerSdk#createKycHandler} createKyc: Create new KycRecord
  * @property {ServerSdk#updateKycHandler} updateKyc: Update Kyc
- * @property {ServerSdk#needRecheckExitingKycHandler} [needRecheckExitingKyc]: Performing logic to check exiting kycRecord need re-submit data
+ * @property {ServerSdk#needRecheckExistingKycHandler} [needRecheckExistingKyc]: Performing logic to check existing kycRecord need re-submit data
  * @property {ServerSdk#generateSsoPayloadHandler} [generateSsoPayload]: Return sso payload
  * @property {function(object) : string} [encodeSessionData]: Encode sessionData to string
  * @property {function(string) : object} [decodeSessionData]: Decode sessionData from string
@@ -433,7 +433,7 @@ declare type UpdateKycHandler = ({
   userRawData: Object
 }) => Promise<KycRecord>;
 /**
- * Update exiting KycRecord
+ * Update existing KycRecord
  * @callback ServerSdk#updateKycHandler
  * @async
  * @param {ServerSdk#kycRecord} kycRecord
@@ -451,7 +451,7 @@ declare type ReCheckKycRecordHandler = ({
 }) => Promise<Object>;
 /**
  * Performing check. Does need re-upload user data or not
- * @callback ServerSdk#needRecheckExitingKycHandler
+ * @callback ServerSdk#needRecheckExistingKycHandler
  * @async
  * @param {ServerSdk#kycRecord} kycRecord
  * @param {ServerSdk#kycProfile} kycProfile
@@ -466,7 +466,7 @@ declare type GenerateSsoPayloadHandler = ({
   payload: Object
 }) => Promise<BlockpassMobileResponsePayload>;
 /**
- * Check need to update new info for exiting Kyc record
+ * Check need to update new info for existing Kyc record
  * @callback ServerSdk#generateSsoPayloadHandler
  * @async
  * @param {ServerSdk#kycRecord} kycRecord
