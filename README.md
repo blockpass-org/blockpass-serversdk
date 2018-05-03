@@ -1,10 +1,12 @@
 # Blockpass Server SDK
 
 ## Terms:
+
 -   **Endpoints**:
-    - `/login`: SSO endpoints. Called by mobile app. Triggered by scanning qr code or opening Applink
-    - `/register`: Registration or re-new certificate request (later). Triggred by pressing **Register** button on mobile application
-    - `/upload`: Upload user rawData. Triggered when mobile application receives **nextAction=upload** returned by `/login` or `/register`
+
+    -   `/login`: SSO endpoints. Called by mobile app. Triggered by scanning qr code or opening Applink
+    -   `/register`: Registration or re-new certificate request (later). Triggred by pressing **Register** button on mobile application
+    -   `/upload`: Upload user rawData. Triggered when mobile application receives **nextAction=upload** returned by `/login` or `/register`
 
 -   **KycProfile**: User profile object return by Blockpass Api
 -   **KycToken**: Access token object. Use to exchange data between Services and Blockpass API (each user will have different token)
@@ -260,7 +262,7 @@ $ npm run build # generate docs and transpile code
 
 Login Flow, handling SSO and AppLink login from Blockpass client.
 
--   Step 1: Handshake between Service and BlockPass
+-   Step 1: Handshake between our Service and BlockPass
 -   Step 2: Sync KycProfile with Blockpass
 -   Step 3: Create / Update kycRecord via handler
 
@@ -291,7 +293,8 @@ Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/
 
 #### registerFlow
 
-Register flow, receiving user sign-up infomation and creating KycProcess. This behaves the same as loginFlow except for it does not require sessionCode input
+Register flow, receiving user sign-up infomation and creating KycProcess. 
+This behaves the same as loginFlow except for it does not require sessionCode input
 
 **Parameters**
 
@@ -302,7 +305,7 @@ Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/
 
 #### signCertificate
 
-Sign new Certificate and send to blockpass
+Sign new Certificate and send to Blockpass
 
 **Parameters**
 

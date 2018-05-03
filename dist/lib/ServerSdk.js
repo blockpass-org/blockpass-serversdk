@@ -28,7 +28,7 @@ class ServerSdk {
     findKycById,
     createKyc,
     updateKyc,
-    needRecheckExitingKyc,
+    needRecheckExistingKyc,
     generateSsoPayload,
     encodeSessionData,
     decodeSessionData
@@ -44,7 +44,7 @@ class ServerSdk {
     this.findKycById = findKycById;
     this.createKyc = createKyc;
     this.updateKyc = updateKyc;
-    this.needRecheckExitingKyc = needRecheckExitingKyc;
+    this.needRecheckExistingKyc = needRecheckExistingKyc;
     this.generateSsoPayload = generateSsoPayload;
     this.encodeSessionData = encodeSessionData;
     this.decodeSessionData = decodeSessionData;
@@ -61,11 +61,11 @@ class ServerSdk {
 
   //-----------------------------------------------------------------------------------
   /**
-   * Login Flow. Which handle SSO and AppLink login from Blockpass client.
+   * Login Flow, handling SSO and AppLink login from Blockpass client.
    *
-   *  - Step 1: Handshake between our service and BlockPass
+   *  - Step 1: Handshake between our Service and BlockPass
    *  - Step 2: Sync KycProfile with Blockpass
-   *  - Step 3: Create / update kycRecord via handler
+   *  - Step 3: Create / Update kycRecord via handler
    */
   loginFow({
     code,
@@ -100,8 +100,8 @@ class ServerSdk {
         payload.nextAction = "none";
       }
 
-      if (kycRecord && _this.needRecheckExitingKyc) {
-        payload = yield Promise.resolve(_this.needRecheckExitingKyc({ kycProfile, kycRecord, kycToken, payload }));
+      if (kycRecord && _this.needRecheckExistingKyc) {
+        payload = yield Promise.resolve(_this.needRecheckExistingKyc({ kycProfile, kycRecord, kycToken, payload }));
       }
 
       // Nothing need to update. Notify sso complete
@@ -164,7 +164,7 @@ class ServerSdk {
       const kycProfile = yield _this2.blockPassProvider.doMatchingData(kycToken);
       if (kycProfile == null) throw new Error("Sync info failed");
 
-      // matching exiting record
+      // matching existing record
       kycRecord = yield Promise.resolve(_this2.updateKyc({
         kycRecord,
         kycProfile,
@@ -195,8 +195,8 @@ class ServerSdk {
 
   //-----------------------------------------------------------------------------------
   /**
-   * Register fow. Recieved user sign-up infomation and create KycProcess.
-   * Basically this flow processing same as loginFlow. The main diffrence is without sessionCode input
+   * Register flow, receiving user sign-up infomation and creating KycProcess. 
+   * This behaves the same as loginFlow except for it does not require sessionCode input
    */
   registerFlow({
     code
@@ -230,8 +230,8 @@ class ServerSdk {
         payload.nextAction = "none";
       }
 
-      if (kycRecord && _this3.needRecheckExitingKyc) {
-        payload = yield Promise.resolve(_this3.needRecheckExitingKyc({ kycProfile, kycRecord, kycToken, payload }));
+      if (kycRecord && _this3.needRecheckExistingKyc) {
+        payload = yield Promise.resolve(_this3.needRecheckExistingKyc({ kycProfile, kycRecord, kycToken, payload }));
       }
 
       return _extends({
@@ -245,7 +245,7 @@ class ServerSdk {
 
   //-----------------------------------------------------------------------------------
   /**
-   * Sign Certificate and send to blockpass
+   * Sign new Certificate and send to Blockpass
    */
   signCertificate({
     id,
@@ -259,7 +259,7 @@ class ServerSdk {
 
   //-----------------------------------------------------------------------------------
   /**
-   * Reject Certificate
+   * Reject a given Certificate
    */
   rejectCertificate({
     profileId,
@@ -273,7 +273,7 @@ class ServerSdk {
 
   //-----------------------------------------------------------------------------------
   /**
-   * Query Merkle proof of path for given slugList
+   * Query Merkle proof for a given slugList
    */
   queryProofOfPath({
     kycToken,
@@ -314,7 +314,7 @@ class ServerSdk {
 
   //-----------------------------------------------------------------------------------
   /**
-   * Check merkle proof for invidual field
+   * Check Merkle proof for invidual field
    * @param {string} rootHash: Root hash of kycRecord
    * @param {string|Buffer} rawData: Raw data need to be check
    * @param {object} proofList: Proof introduction ( from queryProofOfPath response)
@@ -325,7 +325,7 @@ class ServerSdk {
 }
 
 /**
- * Response payload for Blockpass mobile
+ * Response payload for Blockpass mobile app
  * @typedef {Object} ServerSdk#BlockpassMobileResponsePayload
  * @property {string} nextAction: Next action for mobile blockpass ("none" | "upload" | "website")
  * @property {string} [message]: Custom message to display
@@ -335,7 +335,7 @@ class ServerSdk {
  */
 
 /**
- * Upload data from Blockpass mobile
+ * Upload data from Blockpass mobile app
  * @typedef {Object} ServerSdk#UploadDataRequest
  * @param {string} accessToken: Eencoded session data from /login or /register api
  * @param {[string]} slugList: List of identities field supplied by blockpass client
@@ -377,14 +377,14 @@ module.exports = ServerSdk;
  * @property {ServerSdk#findKycByIdHandler} findKycById: Find KycRecord by id
  * @property {ServerSdk#createKycHandler} createKyc: Create new KycRecord
  * @property {ServerSdk#updateKycHandler} updateKyc: Update Kyc
- * @property {ServerSdk#needRecheckExitingKycHandler} [needRecheckExitingKyc]: Performing logic to check exiting kycRecord need re-submit data
+ * @property {ServerSdk#needRecheckExistingKycHandler} [needRecheckExistingKyc]: Performing logic to check existing kycRecord need re-submit data
  * @property {ServerSdk#generateSsoPayloadHandler} [generateSsoPayload]: Return sso payload
  * @property {function(object) : string} [encodeSessionData]: Encode sessionData to string
  * @property {function(string) : object} [decodeSessionData]: Decode sessionData from string
  */
 
 /**
- * Query Kyc record by Id
+ * Handler function to query Kyc record by Id
  * @callback ServerSdk#findKycByIdHandler
  * @async
  * @param {string} kycId
@@ -392,7 +392,7 @@ module.exports = ServerSdk;
  */
 
 /**
- * Create new KycRecord
+ * Handler function to create new KycRecord
  * @callback ServerSdk#createKycHandler
  * @async
  * @param {ServerSdk#kycProfile} kycProfile
@@ -400,7 +400,7 @@ module.exports = ServerSdk;
  */
 
 /**
- * Update exiting KycRecord
+ * Handler function to update existing KycRecord
  * @callback ServerSdk#updateKycHandler
  * @async
  * @param {ServerSdk#kycRecord} kycRecord
@@ -411,8 +411,8 @@ module.exports = ServerSdk;
  */
 
 /**
- * Performing check. Does need re-upload user data or not
- * @callback ServerSdk#needRecheckExitingKycHandler
+ * Handler function return whether a KYC existing check is required
+ * @callback ServerSdk#needRecheckExistingKycHandler
  * @async
  * @param {ServerSdk#kycRecord} kycRecord
  * @param {ServerSdk#kycProfile} kycProfile
@@ -421,7 +421,7 @@ module.exports = ServerSdk;
  */
 
 /**
- * Check need to update new info for exiting Kyc record
+ * Handler function to generate SSo payload
  * @callback ServerSdk#generateSsoPayloadHandler
  * @async
  * @param {ServerSdk#kycRecord} kycRecord

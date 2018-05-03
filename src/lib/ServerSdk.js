@@ -69,11 +69,11 @@ class ServerSdk {
 
   //-----------------------------------------------------------------------------------
   /**
-   * Login Flow. Which handle SSO and AppLink login from Blockpass client.
+   * Login Flow, handling SSO and AppLink login from Blockpass client.
    *
-   *  - Step 1: Handshake between our service and BlockPass
+   *  - Step 1: Handshake between Service and BlockPass
    *  - Step 2: Sync KycProfile with Blockpass
-   *  - Step 3: Create / update kycRecord via handler
+   *  - Step 3: Create / Update kycRecord via handler
    */
   async loginFow({
     code,
@@ -227,8 +227,8 @@ class ServerSdk {
 
   //-----------------------------------------------------------------------------------
   /**
-   * Register fow. Recieved user sign-up infomation and create KycProcess.
-   * Basically this flow processing same as loginFlow. The main diffrence is without sessionCode input
+   * Register flow, receiving user sign-up infomation and creating KycProcess. 
+   * This behaves the same as loginFlow except for it does not require sessionCode input
    */
   async registerFlow({
     code
@@ -279,7 +279,7 @@ class ServerSdk {
 
   //-----------------------------------------------------------------------------------
   /**
-   * Sign Certificate and send to blockpass
+   * Sign new Certificate and send to Blockpass
    */
   async signCertificate({
     id,
@@ -294,7 +294,7 @@ class ServerSdk {
 
   //-----------------------------------------------------------------------------------
   /**
-   * Reject Certificate
+   * Reject a given Certificate
    */
   async rejectCertificate({
     profileId,
@@ -309,7 +309,7 @@ class ServerSdk {
 
   //-----------------------------------------------------------------------------------
   /**
-   * Query Merkle proof of path for given slugList
+   * Query Merkle proof for a given slugList
    */
   async queryProofOfPath({
     kycToken,
@@ -350,7 +350,7 @@ class ServerSdk {
 
   //-----------------------------------------------------------------------------------
   /**
-   * Check merkle proof for invidual field
+   * Check Merkle proof for invidual field
    * @param {string} rootHash: Root hash of kycRecord
    * @param {string|Buffer} rawData: Raw data need to be check
    * @param {object} proofList: Proof introduction ( from queryProofOfPath response)
@@ -408,7 +408,7 @@ declare type ConstructorParams = {
 
 declare type FindKycByIdHandler = (kycId: string) => Promise<KycRecord>;
 /**
- * Query Kyc record by Id
+ * Handler function to query Kyc record by Id
  * @callback ServerSdk#findKycByIdHandler
  * @async
  * @param {string} kycId
@@ -419,7 +419,7 @@ declare type CreateKycHandler = ({ kycProfile: KycProfile }) => Promise<
   KycRecord
 >;
 /**
- * Create new KycRecord
+ * Handler function to create new KycRecord
  * @callback ServerSdk#createKycHandler
  * @async
  * @param {ServerSdk#kycProfile} kycProfile
@@ -433,7 +433,7 @@ declare type UpdateKycHandler = ({
   userRawData: Object
 }) => Promise<KycRecord>;
 /**
- * Update existing KycRecord
+ * Handler function to update existing KycRecord
  * @callback ServerSdk#updateKycHandler
  * @async
  * @param {ServerSdk#kycRecord} kycRecord
@@ -450,7 +450,7 @@ declare type ReCheckKycRecordHandler = ({
   payload: Object
 }) => Promise<Object>;
 /**
- * Performing check. Does need re-upload user data or not
+ * Handler function return whether a KYC existing check is required
  * @callback ServerSdk#needRecheckExistingKycHandler
  * @async
  * @param {ServerSdk#kycRecord} kycRecord
@@ -466,7 +466,7 @@ declare type GenerateSsoPayloadHandler = ({
   payload: Object
 }) => Promise<BlockpassMobileResponsePayload>;
 /**
- * Check need to update new info for existing Kyc record
+ * Handler function to generate SSo payload
  * @callback ServerSdk#generateSsoPayloadHandler
  * @async
  * @param {ServerSdk#kycRecord} kycRecord
@@ -516,7 +516,7 @@ declare type BlockpassMobileResponsePayload = {
 };
 
 /**
- * Response payload for Blockpass mobile
+ * Response payload for Blockpass mobile app
  * @typedef {Object} ServerSdk#BlockpassMobileResponsePayload
  * @property {string} nextAction: Next action for mobile blockpass ("none" | "upload" | "website")
  * @property {string} [message]: Custom message to display
@@ -526,7 +526,7 @@ declare type BlockpassMobileResponsePayload = {
  */
 
 /**
- * Upload data from Blockpass mobile
+ * Upload data from Blockpass mobile app
  * @typedef {Object} ServerSdk#UploadDataRequest
  * @param {string} accessToken: Eencoded session data from /login or /register api
  * @param {[string]} slugList: List of identities field supplied by blockpass client
