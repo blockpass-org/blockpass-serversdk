@@ -543,9 +543,16 @@ type RecordStatus = "notFound" | "waiting" | "inreview" | "approved";
  */
 type RecordFieldStatus = {
   slug: string,
-  status: string,
+  status: InvidualFieldStatus,
   comment: string
 };
+
+/**
+ * --------------------------------------------------------
+ * Status for invidual fields: "recieved" | "approved" | "rejected" | "missing";
+ * @type {string} 
+ */
+type InvidualFieldStatus = "recieved" | "approved" | "rejected" | "missing";
 
 /**
  * --------------------------------------------------------

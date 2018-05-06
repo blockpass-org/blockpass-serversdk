@@ -459,6 +459,13 @@ module.exports = ServerSdk;
 
 /**
  * --------------------------------------------------------
+ * Status for invidual fields: "recieved" | "approved" | "rejected" | "missing";
+ * @type {string} 
+ */
+
+
+/**
+ * --------------------------------------------------------
  * Blockpass Kyc Profile object
  * @type {object}
  */

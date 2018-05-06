@@ -24,7 +24,7 @@
     identities: [
         {
             slug: 'slug name',
-            status: 'recieved|recieved| approved',
+            status: 'recieved|recieved| approved|missing',
             comment: 'reviewer comment'
         },
         //....
@@ -32,7 +32,7 @@
     certificates: [
         {
             slug: 'slug name',
-            status: 'recieved|recieved| approved',
+            status: 'recieved|recieved| approved|missing',
             comment: 'reviewer comment'
         },
         //....

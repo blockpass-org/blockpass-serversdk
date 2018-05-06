@@ -10,7 +10,8 @@ const config = {
     BLOCKPASS_CLIENT_ID: 'test',
     BLOCKPASS_SECRET_ID: 'test',
     REQUIRED_FIELDS: ['phone'],
-    OPTIONAL_FIELDS: []
+    OPTIONAL_FIELDS: [],
+    OPTIONAL_CERTS: ['onfido']
 }
 
 
@@ -23,11 +24,13 @@ const serverSdk = new ServerSDK({
     secretId: config.BLOCKPASS_SECRET_ID,
     requiredFields: config.REQUIRED_FIELDS,
     optionalFields: config.OPTIONAL_FIELDS,
+    certs: config.OPTIONAL_CERTS
 
     // Custom implement
     findKycById: findKycById,
     createKyc: createKyc,
     updateKyc: updateKyc,
+    queryKycStatus: queryKycStatus,
     needRecheckExistingKyc: needRecheckExistingKyc,
     generateSsoPayload: generateSsoPayload
 
@@ -40,7 +43,6 @@ async function findKycById(kycId) {
     return await KYCModel.findOne({ blockPassID: kycId })
 }
 
-//-------------------------------------------------------------------------
 async function createKyc({ kycProfile }) {
     const { id, smartContractId, rootHash, isSynching } = kycProfile;
     const newIns = new KYCModel({
@@ -53,7 +55,6 @@ async function createKyc({ kycProfile }) {
     return await newIns.save()
 }
 
-//-------------------------------------------------------------------------
 async function updateKyc({
     kycRecord,
     kycProfile,
@@ -95,10 +96,25 @@ async function needRecheckExistingKyc({ kycProfile, kycRecord, payload }) {
     return payload;
 }
 
-//-------------------------------------------------------------------------
 async function generateSsoPayload({ kycProfile, kycRecord, kycToken, payload }) {
     return {
         _id: kycRecord._id,
+    }
+}
+
+async function queryKycStatus({ kycRecord }) {
+    const status = kycRecord.status
+
+    return {
+        status,
+        message: 'This process usually take 2 working days',
+        createdDate: new Date(),
+        identities: [{
+            slug: 'phone',
+            status: 'recieved' //"recieved" | "approved" | "rejected" | "missing"
+            comment: ''
+        }],
+        certificates: []
     }
 }
 
@@ -185,6 +201,22 @@ router.post('/api/register', async (req, res) => {
         const { code } = req.body;
 
         const payload = await serverSdk.registerFlow({ code })
+        return res.json(payload)
+    } catch (ex) {
+        console.error(ex)
+        return res.status(500).json({
+            err: 500,
+            msg: ex.message,
+        })
+    }
+})
+
+//-------------------------------------------------------------------------
+router.post('/api/status', async (req, res) => {
+    try {
+        const code = req.body.code
+
+        const payload = await serverSdk.queryStatusFlow({ code })
         return res.json(payload)
     } catch (ex) {
         console.error(ex)
