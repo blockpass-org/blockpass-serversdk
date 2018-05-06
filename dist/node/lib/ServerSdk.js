@@ -16,7 +16,7 @@ const merkleTreeHelper = require("./utils/MerkleHelper");
 class ServerSdk {
 
   /**
-   * 
+   *
    * @param {ConstructorParams} params
    */
   constructor({
@@ -73,7 +73,7 @@ class ServerSdk {
    *  - Step 1: Handshake between Service and BlockPass
    *  - Step 2: Sync KycProfile with Blockpass
    *  - Step 3: Create / Update kycRecord via handler
-   * 
+   *
    * @param {Object} params
    */
   loginFow({
@@ -270,7 +270,9 @@ class ServerSdk {
    * Query status of kyc record
    * @param {Object} params
    */
-  queryStatusFlow({ code }) {
+  queryStatusFlow({
+    code
+  }) {
     var _this4 = this;
 
     return _asyncToGenerator(function* () {
@@ -423,14 +425,14 @@ module.exports = ServerSdk;
 
 
 /**
- * 
+ *
  * String fields from Mobile App
  * @type {Object}
  */
 
 
 /**
- * 
+ *
  * Binary fields from Mobile App
  * @type {Object}
  */
@@ -460,7 +462,7 @@ module.exports = ServerSdk;
 /**
  * --------------------------------------------------------
  * Status for invidual fields: "recieved" | "approved" | "rejected" | "missing";
- * @type {string} 
+ * @type {string}
  */
 
 
@@ -474,7 +476,7 @@ module.exports = ServerSdk;
 /**
  * --------------------------------------------------------
  * Kyc Profile 's syncing status: "syncing" | "complete"
- * @type {string} 
+ * @type {string}
  */
 
 
@@ -502,7 +504,7 @@ module.exports = ServerSdk;
 /**
  * --------------------------------------------------------
  * Handler function to query Kyc record by Id
- * @callback 
+ * @callback
  * @param {string} kycId
  * @return {Promise<KycRecord>}
  */

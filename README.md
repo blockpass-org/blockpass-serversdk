@@ -13,33 +13,6 @@
 -   **KycToken**: Access token object. Use to exchange data between Services and Blockpass API (each user will have different token)
 -   **KycRecord**: Object stored kyc data, managed by Services. It usually contains 3 parts(BlockpassKycProfile + RawData + Service Extra Info)
 
--   **KycRecordStatus**: Object stored kycRecord status following Mobile App format
-
-```javascript
-// Format
-{
-    status: 'notFound|waiting|inreview|approved',
-    message: 'summary current status',
-    createdDate: 'DateTime KycRecord created',
-    identities: [
-        {
-            slug: 'slug name',
-            status: 'recieved|recieved| approved|missing',
-            comment: 'reviewer comment'
-        },
-        //....
-    ],
-    certificates: [
-        {
-            slug: 'slug name',
-            status: 'recieved|recieved| approved|missing',
-            comment: 'reviewer comment'
-        },
-        //....
-    ]
-}
-```
-
 Example:
 
 ```javascript
@@ -68,9 +41,37 @@ Example:
 }
 ```
 
+-   **KycRecordStatus**: Object stored kycRecord status following Mobile App format
+
+```javascript
+// Format
+{
+    status: 'notFound|waiting|inreview|approved',
+    message: 'summary current status',
+    createdDate: 'DateTime KycRecord created',
+    identities: [
+        {
+            slug: 'slug name',
+            status: 'recieved|recieved| approved|missing',
+            comment: 'reviewer comment'
+        },
+        //....
+    ],
+    certificates: [
+        {
+            slug: 'slug name',
+            status: 'recieved|recieved| approved|missing',
+            comment: 'reviewer comment'
+        },
+        //....
+    ]
+}
+```
+
+
 ## Working Flow:
 
-<img src="./doc/flow.svg" width="300" />
+<img src="./doc/flow.svg" width="400" />
 
 ## Getting Started
 

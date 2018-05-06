@@ -22,7 +22,7 @@ class ServerSdk {
   decodeSessionData: ?(token: string) => ?Object;
 
   /**
-   * 
+   *
    * @param {ConstructorParams} params
    */
   constructor({
@@ -96,7 +96,7 @@ class ServerSdk {
    *  - Step 1: Handshake between Service and BlockPass
    *  - Step 2: Sync KycProfile with Blockpass
    *  - Step 3: Create / Update kycRecord via handler
-   * 
+   *
    * @param {Object} params
    */
   async loginFow({
@@ -319,7 +319,11 @@ class ServerSdk {
    * Query status of kyc record
    * @param {Object} params
    */
-  async queryStatusFlow({ code }: { code: string }): Promise<MobileAppKycRecordStatus> {
+  async queryStatusFlow({
+    code
+  }: {
+    code: string
+  }): Promise<MobileAppKycRecordStatus> {
     if (code == null) throw new Error("Missing code or sessionCode");
 
     const kycToken = await this.blockPassProvider.doHandShake(code);
@@ -443,7 +447,6 @@ class ServerSdk {
 
 module.exports = ServerSdk;
 
-
 /**
  * --------------------------------------------------------
  * @type {Object}
@@ -464,7 +467,6 @@ type ConstructorParams = {
   encodeSessionData?: ?(payload: any) => string,
   decodeSessionData?: ?(payload: string) => any
 };
-
 
 /**
  * --------------------------------------------------------
@@ -493,28 +495,28 @@ type KycRecord = any;
  */
 type RawDataUploadDataRequest = {
   [key: string]: RawDataFile | RawDataString
-}
+};
 
 /**
- * 
+ *
  * String fields from Mobile App
  * @type {Object}
  */
 type RawDataString = {
   type: "string",
   value: string
-}
+};
 
 /**
- * 
+ *
  * Binary fields from Mobile App
  * @type {Object}
  */
 type RawDataFile = {
   type: "file",
   buffer: Buffer,
-  originalName?: string,
-}
+  originalName?: string
+};
 
 /**
  * --------------------------------------------------------
@@ -550,7 +552,7 @@ type RecordFieldStatus = {
 /**
  * --------------------------------------------------------
  * Status for invidual fields: "recieved" | "approved" | "rejected" | "missing";
- * @type {string} 
+ * @type {string}
  */
 type InvidualFieldStatus = "recieved" | "approved" | "rejected" | "missing";
 
@@ -569,10 +571,9 @@ type KycProfile = {
 /**
  * --------------------------------------------------------
  * Kyc Profile 's syncing status: "syncing" | "complete"
- * @type {string} 
+ * @type {string}
  */
 type SyncStatus = "syncing" | "complete";
-
 
 /**
  * --------------------------------------------------------
@@ -584,7 +585,6 @@ type KycToken = {
   expires_in: Number,
   refresh_token: string
 };
-
 
 /**
  * --------------------------------------------------------
@@ -609,7 +609,7 @@ type BlockpassMobileResponsePayload = {
 /**
  * --------------------------------------------------------
  * Handler function to query Kyc record by Id
- * @callback 
+ * @callback
  * @param {string} kycId
  * @return {Promise<KycRecord>}
  */

@@ -22,7 +22,7 @@ class ServerSdk {
                                                  
 
   /**
-   * 
+   *
    * @param {ConstructorParams} params
    */
   constructor({
@@ -96,7 +96,7 @@ class ServerSdk {
    *  - Step 1: Handshake between Service and BlockPass
    *  - Step 2: Sync KycProfile with Blockpass
    *  - Step 3: Create / Update kycRecord via handler
-   * 
+   *
    * @param {Object} params
    */
   async loginFow({
@@ -319,7 +319,11 @@ class ServerSdk {
    * Query status of kyc record
    * @param {Object} params
    */
-  async queryStatusFlow({ code }                  )                                    {
+  async queryStatusFlow({
+    code
+  }   
+                
+   )                                    {
     if (code == null) throw new Error("Missing code or sessionCode");
 
     const kycToken = await this.blockPassProvider.doHandShake(code);
@@ -443,7 +447,6 @@ class ServerSdk {
 
 module.exports = ServerSdk;
 
-
 /**
  * --------------------------------------------------------
  * @type {Object}
@@ -464,7 +467,6 @@ module.exports = ServerSdk;
                                                 
                                                
   
-
 
 /**
  * --------------------------------------------------------
@@ -493,28 +495,28 @@ module.exports = ServerSdk;
  */
                                  
                                             
- 
+  
 
 /**
- * 
+ *
  * String fields from Mobile App
  * @type {Object}
  */
                       
                  
                
- 
+  
 
 /**
- * 
+ *
  * Binary fields from Mobile App
  * @type {Object}
  */
                     
                
                  
-                        
- 
+                       
+  
 
 /**
  * --------------------------------------------------------
@@ -550,7 +552,7 @@ module.exports = ServerSdk;
 /**
  * --------------------------------------------------------
  * Status for invidual fields: "recieved" | "approved" | "rejected" | "missing";
- * @type {string} 
+ * @type {string}
  */
                                                                             
 
@@ -569,10 +571,9 @@ module.exports = ServerSdk;
 /**
  * --------------------------------------------------------
  * Kyc Profile 's syncing status: "syncing" | "complete"
- * @type {string} 
+ * @type {string}
  */
                                          
-
 
 /**
  * --------------------------------------------------------
@@ -584,7 +585,6 @@ module.exports = ServerSdk;
                      
                        
   
-
 
 /**
  * --------------------------------------------------------
@@ -609,7 +609,7 @@ module.exports = ServerSdk;
 /**
  * --------------------------------------------------------
  * Handler function to query Kyc record by Id
- * @callback 
+ * @callback
  * @param {string} kycId
  * @return {Promise<KycRecord>}
  */
