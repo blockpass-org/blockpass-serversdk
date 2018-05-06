@@ -13,3 +13,7 @@ C-->Upload
 Upload.->|/upload| Update(updateKyc)
 Update-->E(generateSsoPayload)
 E-->G(SSoComplete)
+
+S[/status]-->S1{findKycById}
+S1-->|New|S2(status=notFound)
+S1-->|Existed|S3(queryKycStatus)

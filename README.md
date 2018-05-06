@@ -4,6 +4,7 @@
 
 -   **Endpoints**:
 
+    -   `/status`: Kyc status endpoints. Called by mobile app. Response **KycRecordStatus**
     -   `/login`: SSO endpoints. Called by mobile app. Triggered by scanning qr code or opening Applink
     -   `/register`: Registration or re-new certificate request (later). Triggred by pressing **Register** button on mobile application
     -   `/upload`: Upload user rawData. Triggered when mobile application receives **nextAction=upload** returned by `/login` or `/register`
@@ -11,6 +12,33 @@
 -   **KycProfile**: User profile object return by Blockpass Api
 -   **KycToken**: Access token object. Use to exchange data between Services and Blockpass API (each user will have different token)
 -   **KycRecord**: Object stored kyc data, managed by Services. It usually contains 3 parts(BlockpassKycProfile + RawData + Service Extra Info)
+
+-   **KycRecordStatus**: Object stored kycRecord status following Mobile App format
+
+```javascript
+// Format
+{
+    status: 'notFound|waiting|inreview|approved',
+    message: 'summary current status',
+    createdDate: 'DateTime KycRecord created',
+    identities: [
+        {
+            slug: 'slug name',
+            status: 'recieved|recieved| approved',
+            comment: 'reviewer comment'
+        },
+        //....
+    ],
+    certificates: [
+        {
+            slug: 'slug name',
+            status: 'recieved|recieved| approved',
+            comment: 'reviewer comment'
+        },
+        //....
+    ]
+}
+```
 
 Example:
 
@@ -63,11 +91,13 @@ const sdk = new ServerSdk({
     secretId: SERVICE_SECRETID,
     requiredFields: REQUIRED_FIELDS,
     optionalFields: OPTIONAL_FIELDS,
+    certs: OPTIONAL_CERTS,
 
     // Custom implement
     findKycById: findKycById ,
     createKyc: createKyc,
     updateKyc: updateKyc,
+    queryKycStatus: queryKycStatus,
     needRecheckExistingKyc: needRecheckExistingKyc,
     generateSsoPayload: generateSsoPayload
 })
@@ -142,6 +172,21 @@ async function updateKyc({
 }
 
 //-------------------------------------------------------------------------
+// Return KycRecord Status for Mobile application
+//-------------------------------------------------------------------------
+async function queryKycStatus({ kycRecord }) {
+    const status = kycRecord.status
+
+    return {
+        status,
+        message: '',
+        createdDate: new Date(),
+        identities: [],
+        certificates: []
+    }
+}
+
+//-------------------------------------------------------------------------
 // Perform checking on existing kycRecord => generate nextAction for BlockpassClient
 //-------------------------------------------------------------------------
 async function needRecheckExistingKyc({ kycProfile, kycRecord, payload }) {
@@ -179,6 +224,7 @@ async function generateSsoPayload({ kycProfile, kycRecord, kycToken, payload }) 
     1.  /login -> sdk.loginFow(...)
     2.  /upload -> sdk.updateDataFlow(...)
     3.  /register -> sdk.registerFlow(...)
+    4.  /status -> sdk.queryStatusFlow(...)
 
 
     Ps: See express `examples`
@@ -223,6 +269,7 @@ $ npm run build # generate docs and transpile code
     -   [loginFow](#loginfow)
     -   [updateDataFlow](#updatedataflow)
     -   [registerFlow](#registerflow)
+    -   [queryStatusFlow](#querystatusflow)
     -   [signCertificate](#signcertificate)
     -   [rejectCertificate](#rejectcertificate)
     -   [queryProofOfPath](#queryproofofpath)
@@ -233,8 +280,11 @@ $ npm run build # generate docs and transpile code
 -   [ServerSdk#findKycByIdHandler](#serversdkfindkycbyidhandler)
 -   [ServerSdk#createKycHandler](#serversdkcreatekychandler)
 -   [ServerSdk#updateKycHandler](#serversdkupdatekychandler)
+-   [ServerSdk#QueryKycStatusHandler](#serversdkquerykycstatushandler)
 -   [ServerSdk#needRecheckExistingKycHandler](#serversdkneedrecheckexistingkychandler)
 -   [ServerSdk#generateSsoPayloadHandler](#serversdkgeneratessopayloadhandler)
+-   [ServerSdk#KycRecordStatus#KycRecordFieldStatus](#serversdkkycrecordstatuskycrecordfieldstatus)
+-   [ServerSdk#KycRecordStatus](#serversdkkycrecordstatus)
 -   [ServerSdk#kycProfile](#serversdkkycprofile)
 -   [ServerSdk#kycToken](#serversdkkyctoken)
 -   [ServerSdk#BlockpassMobileResponsePayload](#serversdkblockpassmobileresponsepayload)
@@ -250,9 +300,11 @@ $ npm run build # generate docs and transpile code
     -   `params.secretId`  
     -   `params.requiredFields`  
     -   `params.optionalFields`  
+    -   `params.certs`  
     -   `params.findKycById`  
     -   `params.createKyc`  
     -   `params.updateKyc`  
+    -   `params.queryKycStatus`  
     -   `params.needRecheckExistingKyc`  
     -   `params.generateSsoPayload`  
     -   `params.encodeSessionData`  
@@ -262,7 +314,7 @@ $ npm run build # generate docs and transpile code
 
 Login Flow, handling SSO and AppLink login from Blockpass client.
 
--   Step 1: Handshake between our Service and BlockPass
+-   Step 1: Handshake between Service and BlockPass
 -   Step 2: Sync KycProfile with Blockpass
 -   Step 3: Create / Update kycRecord via handler
 
@@ -293,7 +345,7 @@ Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/
 
 #### registerFlow
 
-Register flow, receiving user sign-up infomation and creating KycProcess. 
+Register flow, receiving user sign-up infomation and creating KycProcess.
 This behaves the same as loginFlow except for it does not require sessionCode input
 
 **Parameters**
@@ -302,6 +354,17 @@ This behaves the same as loginFlow except for it does not require sessionCode in
     -   `$0.code`  
 
 Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;BlockpassMobileResponsePayload>** 
+
+#### queryStatusFlow
+
+Query status of kyc record
+
+**Parameters**
+
+-   `$0` **any** 
+    -   `$0.code`  
+
+Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;KycRecordStatus>** 
 
 #### signCertificate
 
@@ -415,6 +478,18 @@ Type: [Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Sta
 
 Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[ServerSdk#kycRecord](#serversdkkycrecord)>** Kyc Record
 
+### ServerSdk#QueryKycStatusHandler
+
+Handler function to summary status of KycRecord
+
+Type: [Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)
+
+**Parameters**
+
+-   `kycRecord` **[ServerSdk#kycRecord](#serversdkkycrecord)** 
+
+Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[ServerSdk#KycRecordStatus](#serversdkkycrecordstatus)>** Kyc Record
+
 ### ServerSdk#needRecheckExistingKycHandler
 
 Handler function return whether a KYC existing check is required
@@ -441,6 +516,31 @@ Type: [Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Sta
 -   `kycProfile` **[ServerSdk#kycProfile](#serversdkkycprofile)** 
 -   `kycToken` **[ServerSdk#kycToken](#serversdkkyctoken)** 
 -   `payload` **[Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)** 
+
+### ServerSdk#KycRecordStatus#KycRecordFieldStatus
+
+KYC Record 's Field Status
+
+Type: [Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)
+
+**Properties**
+
+-   `slug` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : Slug name
+-   `status` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : Approve status (recieved | recieved | approved)
+-   `comment` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : Comment from reviewer
+
+### ServerSdk#KycRecordStatus
+
+KYC Record Status Object
+
+Type: [Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)
+
+**Properties**
+
+-   `status` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : Status of KycRecord
+-   `message` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** : Summary text for currently KycRecord
+-   `identities` **\[[ServerSdk#KycRecordStatus#KycRecordFieldStatus](#serversdkkycrecordstatuskycrecordfieldstatus)]** : Identities status
+-   `certificates` **\[[ServerSdk#KycRecordStatus#KycRecordFieldStatus](#serversdkkycrecordstatuskycrecordfieldstatus)]** : Certificate status
 
 ### ServerSdk#kycProfile
 

@@ -126,19 +126,7 @@ describe("login", () => {
         KYCModel.reset();
     })
 
-    it("login[missing params", async () => {
-        const bpFakeUserId = Date.now().toString();
-
-        const ins = createIns();
-
-        const step1 = ins.loginFow({ code: bpFakeUserId })
-        expect(step1).rejects.toEqual(new Error('Missing code or sessionCode'))
-
-        blockpassApiMock.checkPending();
-        blockpassApiMock.clearAll();
-    })
-
-    it("login[new record] wrong sessionToken", async () => {
+    it("[not-found] query-kyc", async () => {
         const bpFakeUserId = Date.now().toString();
         const sessionCode = '1xxx';
 
@@ -148,109 +136,27 @@ describe("login", () => {
 
         const ins = createIns();
 
-        const step1 = await ins.loginFow({ code: bpFakeUserId, sessionCode })
-        expect(step1.nextAction).toEqual('upload')
-        expect(step1.requiredFields).toEqual(REQUIRED_FIELDS)
+        const step1 = await ins.queryStatusFlow({ code: bpFakeUserId })
+        
+        expect(step1.status).toEqual('notFound')
 
-
-        const rawData = {
-            "phone": {
-                type: "string",
-                value: faker.phone.phoneNumber()
-            }
-        }
-        const step2 = ins.updateDataFlow({
-            accessToken: 'wrong',
-            slugList: step1.requiredFields,
-            ...rawData
-        })
-
-        expect(step2).rejects.toEqual(new Error('Invalid Access Token'))
 
         blockpassApiMock.checkPending();
         blockpassApiMock.clearAll();
     })
 
-    it("login[new record]", async () => {
-        const bpFakeUserId = Date.now().toString();
-        const sessionCode = '1xxx';
-
-        // Mock API 
-        blockpassApiMock.mockHandShake(FAKE_BASEURL, bpFakeUserId)
-        blockpassApiMock.mockMatchingData(FAKE_BASEURL, bpFakeUserId, null, 2)
-        blockpassApiMock.mockSSoComplete(FAKE_BASEURL)
-
-        const ins = createIns();
-
-        const step1 = await ins.loginFow({ code: bpFakeUserId, sessionCode })
-        expect(step1.nextAction).toEqual('upload')
-        expect(step1.requiredFields).toEqual(REQUIRED_FIELDS)
-
-
-        const rawData = {
-            "phone": {
-                type: "string",
-                value: faker.phone.phoneNumber()
-            }
-        }
-        const step2 = await ins.updateDataFlow({
-            accessToken: step1.accessToken,
-            slugList: step1.requiredFields,
-            ...rawData
-        })
-
-        expect(step2.nextAction).toEqual('none')
-
-        blockpassApiMock.checkPending();
-        blockpassApiMock.clearAll();
-    })
-
-    it("login[existing record]", async () => {
-        const bpFakeUserId = '1522257024962';
-        const sessionCode = '1xxx';
+    it("[found] query-kyc", async () => {
+        const bpFakeUserId = '5ad862240a176722f25fede3';
 
         // Mock API 
         blockpassApiMock.mockHandShake(FAKE_BASEURL, bpFakeUserId)
         blockpassApiMock.mockMatchingData(FAKE_BASEURL, bpFakeUserId, null, 1)
-        blockpassApiMock.mockSSoComplete(FAKE_BASEURL)
 
         const ins = createIns();
 
-        const step1 = await ins.loginFow({ code: bpFakeUserId, sessionCode })
-        expect(step1.nextAction).toEqual('none')
+        const step1 = await ins.queryStatusFlow({ code: bpFakeUserId })
 
-        blockpassApiMock.checkPending();
-        blockpassApiMock.clearAll();
-    })
-
-    it("login[existing record not full-fill] needRecheckExistingKyc return missing data", async () => {
-        const bpFakeUserId = '1522257024960';
-        const sessionCode = '1xxx';
-
-        // Mock API 
-        blockpassApiMock.mockHandShake(FAKE_BASEURL, bpFakeUserId)
-        blockpassApiMock.mockMatchingData(FAKE_BASEURL, bpFakeUserId, null, 2)
-        blockpassApiMock.mockSSoComplete(FAKE_BASEURL)
-
-        const ins = createIns();
-
-        const step1 = await ins.loginFow({ code: bpFakeUserId, sessionCode })
-        expect(step1.nextAction).toEqual('upload')
-        expect(step1.requiredFields).toEqual(['phone'])
-
-        const rawData = {
-            "phone": {
-                type: "string",
-                value: faker.phone.phoneNumber()
-            }
-        }
-        const step2 = await ins.updateDataFlow({
-            accessToken: step1.accessToken,
-            slugList: step1.requiredFields,
-            ...rawData
-        })
-
-        expect(step2.nextAction).toEqual('none')
+        expect(step1.status).toEqual('waiting')
 
         blockpassApiMock.checkPending();
         blockpassApiMock.clearAll();

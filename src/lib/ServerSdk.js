@@ -10,11 +10,13 @@ class ServerSdk {
   findKycById: FindKycByIdHandler;
   createKyc: CreateKycHandler;
   updateKyc: UpdateKycHandler;
+  queryKycStatus: QueryKycStatusHandler;
   needRecheckExistingKyc: ?ReCheckKycRecordHandler;
   generateSsoPayload: ?GenerateSsoPayloadHandler;
   blockPassProvider: any;
   requiredFields: [string];
   optionalFields: [string];
+  certs: [string];
   secretId: string;
   encodeSessionData: ?(payload: any) => string;
   decodeSessionData: ?(token: string) => ?Object;
@@ -29,9 +31,11 @@ class ServerSdk {
     secretId,
     requiredFields,
     optionalFields,
+    certs,
     findKycById,
     createKyc,
     updateKyc,
+    queryKycStatus,
     needRecheckExistingKyc,
     generateSsoPayload,
     encodeSessionData,
@@ -40,18 +44,35 @@ class ServerSdk {
     if (clientId == null || secretId == null)
       throw new Error("Missing clientId or secretId");
 
-    if (findKycById != null && typeof findKycById !== "function")
+    if (
+      findKycById == null ||
+      (findKycById != null && typeof findKycById !== "function")
+    )
       throw new Error("findKycById should be null or function");
 
-    if (createKyc != null && typeof createKyc !== "function")
+    if (
+      createKyc == null ||
+      (createKyc != null && typeof createKyc !== "function")
+    )
       throw new Error("createKyc should be null or function");
 
-    if (updateKyc != null && typeof updateKyc !== "function")
+    if (
+      updateKyc == null ||
+      (updateKyc != null && typeof updateKyc !== "function")
+    )
       throw new Error("updateKyc should be null or function");
+
+    if (
+      queryKycStatus == null ||
+      (queryKycStatus != null && typeof queryKycStatus !== "function")
+    )
+      throw new Error("queryKycStatus should be null or function");
 
     this.findKycById = findKycById;
     this.createKyc = createKyc;
     this.updateKyc = updateKyc;
+    this.queryKycStatus = queryKycStatus;
+
     this.needRecheckExistingKyc = needRecheckExistingKyc;
     this.generateSsoPayload = generateSsoPayload;
     this.encodeSessionData = encodeSessionData;
@@ -65,6 +86,7 @@ class ServerSdk {
     this.secretId = secretId;
     this.requiredFields = requiredFields;
     this.optionalFields = optionalFields;
+    this.certs = certs;
   }
 
   //-----------------------------------------------------------------------------------
@@ -108,6 +130,7 @@ class ServerSdk {
       payload.nextAction = "upload";
       payload.requiredFields = this.requiredFields;
       payload.optionalFields = this.optionalFields;
+      payload.certs = this.certs;
     } else {
       payload.message = "welcome back";
       payload.nextAction = "none";
@@ -115,7 +138,12 @@ class ServerSdk {
 
     if (kycRecord && this.needRecheckExistingKyc) {
       payload = await Promise.resolve(
-        this.needRecheckExistingKyc({ kycProfile, kycRecord, kycToken, payload })
+        this.needRecheckExistingKyc({
+          kycProfile,
+          kycRecord,
+          kycToken,
+          payload
+        })
       );
     }
 
@@ -227,7 +255,7 @@ class ServerSdk {
 
   //-----------------------------------------------------------------------------------
   /**
-   * Register flow, receiving user sign-up infomation and creating KycProcess. 
+   * Register flow, receiving user sign-up infomation and creating KycProcess.
    * This behaves the same as loginFlow except for it does not require sessionCode input
    */
   async registerFlow({
@@ -257,6 +285,7 @@ class ServerSdk {
       payload.nextAction = "upload";
       payload.requiredFields = this.requiredFields;
       payload.optionalFields = this.optionalFields;
+      payload.certs = this.certs;
     } else {
       payload.message = "welcome back";
       payload.nextAction = "none";
@@ -264,7 +293,12 @@ class ServerSdk {
 
     if (kycRecord && this.needRecheckExistingKyc) {
       payload = await Promise.resolve(
-        this.needRecheckExistingKyc({ kycProfile, kycRecord, kycToken, payload })
+        this.needRecheckExistingKyc({
+          kycProfile,
+          kycRecord,
+          kycToken,
+          payload
+        })
       );
     }
 
@@ -274,6 +308,46 @@ class ServerSdk {
         kycToken
       }),
       ...payload
+    };
+  }
+
+  //-----------------------------------------------------------------------------------
+  /**
+   * Query status of kyc record
+   *
+   */
+  async queryStatusFlow({ code }: { code: string }): Promise<KycRecordStatus> {
+    if (code == null) throw new Error("Missing code or sessionCode");
+
+    const kycToken = await this.blockPassProvider.doHandShake(code);
+    if (kycToken == null) throw new Error("Handshake failed");
+
+    this._activityLog("[BlockPass]", kycToken);
+
+    const kycProfile = await this.blockPassProvider.doMatchingData(kycToken);
+    if (kycProfile == null) throw new Error("Sync info failed");
+
+    this._activityLog("[BlockPass]", kycProfile);
+
+    const kycRecord = await Promise.resolve(this.findKycById(kycProfile.id));
+
+    if (!kycRecord)
+      return {
+        status: "notFound"
+      };
+
+    const kycStatus = await Promise.resolve(this.queryKycStatus({ kycRecord }));
+
+    // checking fields
+    const { status, identities } = kycStatus;
+
+    if (!status)
+      throw new Error("[queryKycStatus] return missing fields: status");
+    if (!identities)
+      throw new Error("[queryKycStatus] return missing fields: identities");
+
+    return {
+      ...kycStatus
     };
   }
 
@@ -382,13 +456,15 @@ declare type ConstructorParams = {
   secretId: string,
   requiredFields: [string],
   optionalFields: [string],
-  findKycById: any,
-  createKyc: any,
-  updateKyc: any,
-  needRecheckExistingKyc?: any,
-  generateSsoPayload?: any,
-  encodeSessionData?: any,
-  decodeSessionData?: any
+  certs: [string],
+  findKycById: FindKycByIdHandler,
+  createKyc: CreateKycHandler,
+  updateKyc: UpdateKycHandler,
+  queryKycStatus: QueryKycStatusHandler,
+  needRecheckExistingKyc?: ReCheckKycRecordHandler,
+  generateSsoPayload?: GenerateSsoPayloadHandler,
+  encodeSessionData?: ?(payload: any) => string,
+  decodeSessionData?: ?(payload: string) => any
 };
 /**
  * @typedef {Object} ServerSdk#ConstructorParams
@@ -443,6 +519,17 @@ declare type UpdateKycHandler = ({
  * @returns {Promise<ServerSdk#kycRecord>} Kyc Record
  */
 
+declare type QueryKycStatusHandler = ({
+  kycRecord: KycRecord
+}) => Promise<KycRecordStatus>;
+/**
+ * Handler function to summary status of KycRecord
+ * @callback ServerSdk#QueryKycStatusHandler
+ * @async
+ * @param {ServerSdk#kycRecord} kycRecord
+ * @returns {Promise<ServerSdk#KycRecordStatus>} Kyc Record
+ */
+
 declare type ReCheckKycRecordHandler = ({
   kycProfile: KycProfile,
   kycRecord: KycRecord,
@@ -477,6 +564,38 @@ declare type GenerateSsoPayloadHandler = ({
  */
 
 declare type KycRecord = any;
+
+declare type RecordStatus = "notFound" | "waiting" | "inreview" | "approved";
+declare type RecordFieldStatus = {
+  slug: string,
+  status: string,
+  comment: string
+};
+/**
+ * KYC Record 's Field Status
+ * @typedef {Object} ServerSdk#KycRecordStatus#KycRecordFieldStatus
+ * @property {string} slug: Slug name
+ * @property {string} status: Approve status (recieved | recieved | approved)
+ * @property {string} comment: Comment from reviewer
+ */
+
+declare type KycRecordStatus = {
+  status: RecordStatus,
+  message?: string,
+  createdDate?: Date,
+  identities?: [RecordFieldStatus],
+  certificates?: [RecordFieldStatus]
+};
+/**
+ * KYC Record Status Object
+ * @typedef {Object} ServerSdk#KycRecordStatus
+ * @property {string} status: Status of KycRecord
+ * @property {string} message: Summary text for currently KycRecord
+ * @property {[ServerSdk#KycRecordStatus#KycRecordFieldStatus]} identities: Identities status
+ * @property {[ServerSdk#KycRecordStatus#KycRecordFieldStatus]} certificates: Certificate status
+ * @property {string('syncing'|'complete')} isSynching: Smartcontract syncing status
+ */
+
 declare type SyncStatus = "syncing" | "complete";
 declare type KycProfile = {
   id: string,
@@ -484,7 +603,6 @@ declare type KycProfile = {
   rootHash: string,
   isSynching: SyncStatus
 };
-
 /**
  * KYC Profile Object
  * @typedef {Object} ServerSdk#kycProfile

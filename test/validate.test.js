@@ -9,6 +9,7 @@ const FAKE_SECRETID = "unitTest"
 const FAKE_BASEURL = "http://mockapi"
 const REQUIRED_FIELDS = ['phone']
 const OPTIONAL_FIELDS = []
+const OPTIONAL_CERTS = ['onfido']
 
 const PROOF_LIST = {
     "phone": [
@@ -91,6 +92,19 @@ async function updateKyc({
     return await kycRecord.save()
 }
 
+//-------------------------------------------------------------------------
+async function queryKycStatus({ kycRecord }) {
+    const status = kycRecord.status
+
+    return {
+        status,
+        message: '',
+        createdDate: new Date(),
+        identities: [],
+        certificates: []
+    }
+}
+
 async function needRecheckExistingKyc({ kycProfile, kycRecord, payload }) {
 
     if (!(kycRecord.phone))
@@ -111,18 +125,20 @@ async function generateSsoPayload({ kycProfile, kycRecord, kycToken, payload }) 
 }
 
 
-function createIns({ find, create, update, reCheck, ssoPayload } = {}) {
+function createIns({ find, create, update, reCheck, query, ssoPayload } = {}) {
     return new ServerSdk({
         baseUrl: FAKE_BASEURL,
         clientId: FAKE_CLIENTID,
         secretId: FAKE_SECRETID,
         requiredFields: REQUIRED_FIELDS,
         optionalFields: OPTIONAL_FIELDS,
+        certs: OPTIONAL_CERTS,
 
         // Custom implement
         findKycById: findKycById || find,
         createKyc: createKyc || create,
         updateKyc: updateKyc || update,
+        queryKycStatus: queryKycStatus || query,
         needRecheckExistingKyc: needRecheckExistingKyc || reCheck,
         generateSsoPayload: generateSsoPayload || ssoPayload
     })
