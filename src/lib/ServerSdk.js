@@ -22,8 +22,8 @@ class ServerSdk {
   decodeSessionData: ?(token: string) => ?Object;
 
   /**
-   *
-   * @param {...ServerSdk#ConstructorParams} params
+   * 
+   * @param {ConstructorParams} params
    */
   constructor({
     baseUrl,
@@ -89,13 +89,15 @@ class ServerSdk {
     this.certs = certs;
   }
 
-  //-----------------------------------------------------------------------------------
   /**
+   * -----------------------------------------------------------------------------------
    * Login Flow, handling SSO and AppLink login from Blockpass client.
    *
    *  - Step 1: Handshake between Service and BlockPass
    *  - Step 2: Sync KycProfile with Blockpass
    *  - Step 3: Create / Update kycRecord via handler
+   * 
+   * @param {Object} params
    */
   async loginFow({
     code,
@@ -177,13 +179,13 @@ class ServerSdk {
     };
   }
 
-  //-----------------------------------------------------------------------------------
   /**
+   * -----------------------------------------------------------------------------------
    * Handle user data upload and fill-up kycRecord
    *  - Step 1: restore session from accessToken
    *  - Step 2: validate required fields provided by client vs serviceMetaData(required / optional)
    *  - Step 3: update raw data to kycRecord
-   * @param {...ServerSdk#UploadDataRequest} params
+   * @param {RawDataUploadDataRequest} params
    */
   async updateDataFlow({
     accessToken,
@@ -253,10 +255,11 @@ class ServerSdk {
     };
   }
 
-  //-----------------------------------------------------------------------------------
   /**
+   * -----------------------------------------------------------------------------------
    * Register flow, receiving user sign-up infomation and creating KycProcess.
    * This behaves the same as loginFlow except for it does not require sessionCode input
+   * @param {Object} params
    */
   async registerFlow({
     code
@@ -311,12 +314,12 @@ class ServerSdk {
     };
   }
 
-  //-----------------------------------------------------------------------------------
   /**
+   * -----------------------------------------------------------------------------------
    * Query status of kyc record
-   *
+   * @param {Object} params
    */
-  async queryStatusFlow({ code }: { code: string }): Promise<KycRecordStatus> {
+  async queryStatusFlow({ code }: { code: string }): Promise<MobileAppKycRecordStatus> {
     if (code == null) throw new Error("Missing code or sessionCode");
 
     const kycToken = await this.blockPassProvider.doHandShake(code);
@@ -351,9 +354,10 @@ class ServerSdk {
     };
   }
 
-  //-----------------------------------------------------------------------------------
   /**
+   * -----------------------------------------------------------------------------------
    * Sign new Certificate and send to Blockpass
+   * @param {Object} params
    */
   async signCertificate({
     id,
@@ -366,9 +370,10 @@ class ServerSdk {
     return false;
   }
 
-  //-----------------------------------------------------------------------------------
   /**
+   * -----------------------------------------------------------------------------------
    * Reject a given Certificate
+   * @param {Object} params
    */
   async rejectCertificate({
     profileId,
@@ -381,9 +386,10 @@ class ServerSdk {
     return false;
   }
 
-  //-----------------------------------------------------------------------------------
   /**
+   * -----------------------------------------------------------------------------------
    * Query Merkle proof for a given slugList
+   * @param {Object} params
    */
   async queryProofOfPath({
     kycToken,
@@ -422,12 +428,9 @@ class ServerSdk {
     }
   }
 
-  //-----------------------------------------------------------------------------------
   /**
+   * -----------------------------------------------------------------------------------
    * Check Merkle proof for invidual field
-   * @param {string} rootHash: Root hash of kycRecord
-   * @param {string|Buffer} rawData: Raw data need to be check
-   * @param {object} proofList: Proof introduction ( from queryProofOfPath response)
    */
   merkleProofCheckSingle(
     rootHash: string,
@@ -440,17 +443,12 @@ class ServerSdk {
 
 module.exports = ServerSdk;
 
-/**
- * ------------------------------------------------------
- *
- */
 
 /**
- * KYC Record Object
- * @typedef {Object} ServerSdk#kycRecord
+ * --------------------------------------------------------
+ * @type {Object}
  */
-
-declare type ConstructorParams = {
+type ConstructorParams = {
   baseUrl: string,
   clientId: string,
   secretId: string,
@@ -466,190 +464,19 @@ declare type ConstructorParams = {
   encodeSessionData?: ?(payload: any) => string,
   decodeSessionData?: ?(payload: string) => any
 };
+
+
 /**
- * @typedef {Object} ServerSdk#ConstructorParams
- * @property {string} baseUrl: Blockpass Api Url (from developer dashboard)
- * @property {string} clientId: CliendId(from developer dashboard)
- * @property {string} secretId: SecretId(from developer dashboard)
- * @property {[string]} requiredFields: Required identities fields(from developer dashboard)
- * @property {[string]} optionalFields: Optional identities fields(from developer dashboard)
- * @property {ServerSdk#findKycByIdHandler} findKycById: Find KycRecord by id
- * @property {ServerSdk#createKycHandler} createKyc: Create new KycRecord
- * @property {ServerSdk#updateKycHandler} updateKyc: Update Kyc
- * @property {ServerSdk#needRecheckExistingKycHandler} [needRecheckExistingKyc]: Performing logic to check existing kycRecord need re-submit data
- * @property {ServerSdk#generateSsoPayloadHandler} [generateSsoPayload]: Return sso payload
- * @property {function(object) : string} [encodeSessionData]: Encode sessionData to string
- * @property {function(string) : object} [decodeSessionData]: Decode sessionData from string
+ * --------------------------------------------------------
+ * KYC Records
+ * @type {object}
  */
-
-declare type FindKycByIdHandler = (kycId: string) => Promise<KycRecord>;
-/**
- * Handler function to query Kyc record by Id
- * @callback ServerSdk#findKycByIdHandler
- * @async
- * @param {string} kycId
- * @returns {Promise<ServerSdk#kycRecord>} Kyc Record
- */
-
-declare type CreateKycHandler = ({ kycProfile: KycProfile }) => Promise<
-  KycRecord
->;
-/**
- * Handler function to create new KycRecord
- * @callback ServerSdk#createKycHandler
- * @async
- * @param {ServerSdk#kycProfile} kycProfile
- * @returns {Promise<ServerSdk#kycRecord>} Kyc Record
- */
-
-declare type UpdateKycHandler = ({
-  kycProfile: KycProfile,
-  kycRecord: KycRecord,
-  kycToken: KycToken,
-  userRawData: Object
-}) => Promise<KycRecord>;
-/**
- * Handler function to update existing KycRecord
- * @callback ServerSdk#updateKycHandler
- * @async
- * @param {ServerSdk#kycRecord} kycRecord
- * @param {ServerSdk#kycProfile} kycProfile
- * @param {ServerSdk#kycToken} kycToken
- * @param {Object} userRawData
- * @returns {Promise<ServerSdk#kycRecord>} Kyc Record
- */
-
-declare type QueryKycStatusHandler = ({
-  kycRecord: KycRecord
-}) => Promise<KycRecordStatus>;
-/**
- * Handler function to summary status of KycRecord
- * @callback ServerSdk#QueryKycStatusHandler
- * @async
- * @param {ServerSdk#kycRecord} kycRecord
- * @returns {Promise<ServerSdk#KycRecordStatus>} Kyc Record
- */
-
-declare type ReCheckKycRecordHandler = ({
-  kycProfile: KycProfile,
-  kycRecord: KycRecord,
-  kycToken: KycToken,
-  payload: Object
-}) => Promise<Object>;
-/**
- * Handler function return whether a KYC existing check is required
- * @callback ServerSdk#needRecheckExistingKycHandler
- * @async
- * @param {ServerSdk#kycRecord} kycRecord
- * @param {ServerSdk#kycProfile} kycProfile
- * @param {Object} payload
- * @returns {Promise<Object>} Payload return to client
- */
-
-declare type GenerateSsoPayloadHandler = ({
-  kycProfile: KycProfile,
-  kycRecord: KycRecord,
-  kycToken: KycToken,
-  payload: Object
-}) => Promise<BlockpassMobileResponsePayload>;
-/**
- * Handler function to generate SSo payload
- * @callback ServerSdk#generateSsoPayloadHandler
- * @async
- * @param {ServerSdk#kycRecord} kycRecord
- * @param {ServerSdk#kycProfile} kycProfile
- * @param {ServerSdk#kycToken} kycToken
- * @param {Object} payload
- * @returns {Promise<{@link BlockpassMobileResponsePayload}>} Payload return to client
- */
-
-declare type KycRecord = any;
-
-declare type RecordStatus = "notFound" | "waiting" | "inreview" | "approved";
-declare type RecordFieldStatus = {
-  slug: string,
-  status: string,
-  comment: string
-};
-/**
- * KYC Record 's Field Status
- * @typedef {Object} ServerSdk#KycRecordStatus#KycRecordFieldStatus
- * @property {string} slug: Slug name
- * @property {string} status: Approve status (recieved | recieved | approved)
- * @property {string} comment: Comment from reviewer
- */
-
-declare type KycRecordStatus = {
-  status: RecordStatus,
-  message?: string,
-  createdDate?: Date,
-  identities?: [RecordFieldStatus],
-  certificates?: [RecordFieldStatus]
-};
-/**
- * KYC Record Status Object
- * @typedef {Object} ServerSdk#KycRecordStatus
- * @property {string} status: Status of KycRecord
- * @property {string} message: Summary text for currently KycRecord
- * @property {[ServerSdk#KycRecordStatus#KycRecordFieldStatus]} identities: Identities status
- * @property {[ServerSdk#KycRecordStatus#KycRecordFieldStatus]} certificates: Certificate status
- * @property {string('syncing'|'complete')} isSynching: Smartcontract syncing status
- */
-
-declare type SyncStatus = "syncing" | "complete";
-declare type KycProfile = {
-  id: string,
-  smartContractId: string,
-  rootHash: string,
-  isSynching: SyncStatus
-};
-/**
- * KYC Profile Object
- * @typedef {Object} ServerSdk#kycProfile
- * @property {string} id: Udid of kycProfile (assigned by blockpass)
- * @property {string} smartContractId: SmartContract user ID ( using to validate rootHash via Sc)
- * @property {string} rootHash: Currently Root Hash
- * @property {string('syncing'|'complete')} isSynching: Smartcontract syncing status
- */
-
-declare type KycToken = {
-  access_token: string,
-  expires_in: Number,
-  refresh_token: string
-};
-/**
- * @typedef {Object} ServerSdk#kycToken
- * @property {string} access_token: AccessToken string
- * @property {Number} expires_in: Expired time in seconds
- * @property {string} refresh_token: Refresh token
- */
-
-declare type NextActionType = "none" | "upload";
-declare type BlockpassMobileResponsePayload = {
-  nextAction: NextActionType,
-  message?: string,
-  accessToken?: string,
-  requiredFields?: [string],
-  optionalFields?: [string]
-};
+type KycRecord = any;
 
 /**
- * Response payload for Blockpass mobile app
- * @typedef {Object} ServerSdk#BlockpassMobileResponsePayload
- * @property {string} nextAction: Next action for mobile blockpass ("none" | "upload" | "website")
- * @property {string} [message]: Custom message to display
- * @property {string} [accessToken]: Encoded session into token ( using share data between multiple steps )
- * @property {[string]} [requiredFields]: Required identitites need to be send throught '/upload'
- * @property {[string]} [optionalFields]: Optional identitites (client can decline provide those info)
- */
-
-/**
- * Upload data from Blockpass mobile app
- * @typedef {Object} ServerSdk#UploadDataRequest
- * @param {string} accessToken: Eencoded session data from /login or /register api
- * @param {[string]} slugList: List of identities field supplied by blockpass client
- * @param {...Object} userRawData: Rest parameters contain User raw data from multiform/parts request. Following format below:
- *
+ * --------------------------------------------------------
+ * RawData upload from Mobile App
+ * @type {Object.<string, RawDataString | RawDataFile>}
  * @example
  * {
  *  // string fields
@@ -659,8 +486,200 @@ declare type BlockpassMobileResponsePayload = {
  *  "selfie": { type: 'file', buffer: Buffer(..), originalname: 'fileOriginalName'}
  *
  *  // certificate fields with `[cer]` prefix
- *  "[cer]onfido": {type: 'string', valur:'...'}
+ *  "[cer]onfido": {type: 'string', value:'...'}
  *
  *  ....
  * }
  */
+type RawDataUploadDataRequest = {
+  [key: string]: RawDataFile | RawDataString
+}
+
+/**
+ * 
+ * String fields from Mobile App
+ * @type {Object}
+ */
+type RawDataString = {
+  type: "string",
+  value: string
+}
+
+/**
+ * 
+ * Binary fields from Mobile App
+ * @type {Object}
+ */
+type RawDataFile = {
+  type: "file",
+  buffer: Buffer,
+  originalName?: string,
+}
+
+/**
+ * --------------------------------------------------------
+ * KYC Record Status
+ * @type {object}
+ */
+type MobileAppKycRecordStatus = {
+  status: RecordStatus,
+  message?: string,
+  createdDate?: Date,
+  identities?: [RecordFieldStatus],
+  certificates?: [RecordFieldStatus]
+};
+
+/**
+ * --------------------------------------------------------
+ * Currently KycRecord status: "notFound" | "waiting" | "inreview" | "approved"
+ * @type {string}
+ */
+type RecordStatus = "notFound" | "waiting" | "inreview" | "approved";
+
+/**
+ * --------------------------------------------------------
+ * KYC Record 's Field Status
+ * @type {object}
+ */
+type RecordFieldStatus = {
+  slug: string,
+  status: string,
+  comment: string
+};
+
+/**
+ * --------------------------------------------------------
+ * Blockpass Kyc Profile object
+ * @type {object}
+ */
+type KycProfile = {
+  id: string,
+  smartContractId: string,
+  rootHash: string,
+  isSynching: SyncStatus
+};
+
+/**
+ * --------------------------------------------------------
+ * Kyc Profile 's syncing status: "syncing" | "complete"
+ * @type {string} 
+ */
+type SyncStatus = "syncing" | "complete";
+
+
+/**
+ * --------------------------------------------------------
+ * Blockpass KycToken object
+ * @type {object}
+ */
+type KycToken = {
+  access_token: string,
+  expires_in: Number,
+  refresh_token: string
+};
+
+
+/**
+ * --------------------------------------------------------
+ * Client Next action: "none" | "upload"
+ * @type {string}
+ */
+type NextActionType = "none" | "upload";
+
+/**
+ * --------------------------------------------------------
+ * Blockpass Mobile Response
+ * @type {object}
+ */
+type BlockpassMobileResponsePayload = {
+  nextAction: NextActionType,
+  message?: string,
+  accessToken?: string,
+  requiredFields?: [string],
+  optionalFields?: [string]
+};
+
+/**
+ * --------------------------------------------------------
+ * Handler function to query Kyc record by Id
+ * @callback 
+ * @param {string} kycId
+ * @return {Promise<KycRecord>}
+ */
+type FindKycByIdHandler = (kycId: string) => Promise<KycRecord>;
+
+/**
+ * --------------------------------------------------------
+ * Handler function to create new KycRecord
+ * @callback
+ * @param {Object} params
+ * @param {KycProfile} params.kycProfile
+ * @returns {Promise<KycRecord>}
+ */
+type CreateKycHandler = ({ kycProfile: KycProfile }) => Promise<KycRecord>;
+
+/**
+ * --------------------------------------------------------
+ * Handler function to update existing KycRecord
+ * @callback
+ * @param {Object} params
+ * @param {KycProfile} params.kycProfile
+ * @param {KycRecord} params.kycRecord
+ * @param {KycToken} params.kycToken
+ * @param {Object} params.userRawData
+ * @returns {Promise<KycRecord>}
+ */
+type UpdateKycHandler = ({
+  kycProfile: KycProfile,
+  kycRecord: KycRecord,
+  kycToken: KycToken,
+  userRawData: Object
+}) => Promise<KycRecord>;
+
+/**
+ * --------------------------------------------------------
+ * Handler function to summary status of KycRecord
+ * @callback
+ * @param {Object} params
+ * @param {KycRecord} params.kycRecord
+ * @returns {Promise<MobileAppKycRecordStatus>}
+ */
+type QueryKycStatusHandler = ({
+  kycRecord: KycRecord
+}) => Promise<MobileAppKycRecordStatus>;
+
+/**
+ * --------------------------------------------------------
+ * Handler function return whether a KYC existing check is required
+ * @callback
+ * @param {Object} params
+ * @param {KycProfile} params.kycProfile
+ * @param {KycRecord} params.kycRecord
+ * @param {KycToken} params.kycToken
+ * @param {Object} params.payload
+ * @returns {Promise<Object>}
+ */
+type ReCheckKycRecordHandler = ({
+  kycProfile: KycProfile,
+  kycRecord: KycRecord,
+  kycToken: KycToken,
+  payload: Object
+}) => Promise<Object>;
+
+/**
+ * --------------------------------------------------------
+ * Handler function to generate SSo payload
+ * @callback
+ * @param {Object} params
+ * @param {KycProfile} params.kycProfile
+ * @param {KycRecord} params.kycRecord
+ * @param {KycToken} params.kycToken
+ * @param {Object} params.payload
+ * @returns {Promise<BlockpassMobileResponsePayload>;}
+ */
+type GenerateSsoPayloadHandler = ({
+  kycProfile: KycProfile,
+  kycRecord: KycRecord,
+  kycToken: KycToken,
+  payload: Object
+}) => Promise<BlockpassMobileResponsePayload>;
