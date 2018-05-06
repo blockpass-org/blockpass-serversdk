@@ -20,7 +20,7 @@
     "postcoverage": "opn coverage/lcov-report/index.html",
     "lint": "eslint src",
     "flow": "flow check",
-    "docs": "documentation readme src --section=API",
+    "docs": "documentation build src -f md -o doc/api.md",
     "clean": "rimraf dist",
     "flowbuild": "flow-copy-source src dist/node && flow-remove-types src/ --out-dir dist/es6",
     "prebuild": "npm run docs && npm run clean && npm run flowbuild",
