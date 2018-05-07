@@ -71,7 +71,7 @@ Example:
 
 ## Working Flow:
 
-<img src="./doc/flow.svg" width="400" />
+<img src="./doc/flow.svg" width="600" />
 
 ## Getting Started
 
