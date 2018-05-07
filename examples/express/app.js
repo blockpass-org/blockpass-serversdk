@@ -111,7 +111,7 @@ async function queryKycStatus({ kycRecord }) {
         createdDate: new Date(),
         identities: [{
             slug: 'phone',
-            status: 'recieved' //"recieved" | "approved" | "rejected" | "missing"
+            status: 'received', //"received" | "approved" | "rejected" | "missing"
             comment: ''
         }],
         certificates: []

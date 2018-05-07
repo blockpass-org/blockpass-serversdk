@@ -52,7 +52,7 @@ Example:
     identities: [
         {
             slug: 'slug name',
-            status: 'recieved|recieved| approved|missing',
+            status: 'received|received| approved|missing',
             comment: 'reviewer comment'
         },
         //....
@@ -60,7 +60,7 @@ Example:
     certificates: [
         {
             slug: 'slug name',
-            status: 'recieved|recieved| approved|missing',
+            status: 'received|received| approved|missing',
             comment: 'reviewer comment'
         },
         //....

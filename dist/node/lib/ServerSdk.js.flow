@@ -551,10 +551,10 @@ type RecordFieldStatus = {
 
 /**
  * --------------------------------------------------------
- * Status for invidual fields: "recieved" | "approved" | "rejected" | "missing";
+ * Status for invidual fields: "received" | "approved" | "rejected" | "missing";
  * @type {string}
  */
-type InvidualFieldStatus = "recieved" | "approved" | "rejected" | "missing";
+type InvidualFieldStatus = "received" | "approved" | "rejected" | "missing";
 
 /**
  * --------------------------------------------------------

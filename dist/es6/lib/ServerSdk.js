@@ -551,7 +551,7 @@ module.exports = ServerSdk;
 
 /**
  * --------------------------------------------------------
- * Status for invidual fields: "recieved" | "approved" | "rejected" | "missing";
+ * Status for invidual fields: "received" | "approved" | "rejected" | "missing";
  * @type {string}
  */
                                                                             
