@@ -205,12 +205,6 @@ class ServerSdk {
     let kycRecord = await Promise.resolve(this.findKycById(kycId));
     if (!kycRecord) throw new Error("Kyc record could not found");
 
-    const criticalFieldsCheck = this.requiredFields.every(
-      val => slugList.indexOf(val) !== -1 && userRawData[val] != null
-    );
-
-    if (!criticalFieldsCheck) throw new Error("Missing critical slug");
-
     // query kyc profile
     const kycProfile = await this.blockPassProvider.doMatchingData(kycToken);
     if (kycProfile == null) throw new Error("Sync info failed");
@@ -320,13 +314,20 @@ class ServerSdk {
    * @param {Object} params
    */
   async queryStatusFlow({
-    code
+    code,
+    sessionCode
   }   
-                
+                 
+                       
    )                                    {
     if (code == null) throw new Error("Missing code or sessionCode");
 
-    const kycToken = await this.blockPassProvider.doHandShake(code);
+    let handShakePayload = [code]
+
+    if (sessionCode)
+      handShakePayload.push(sessionCode)
+
+    const kycToken = await this.blockPassProvider.doHandShake(...handShakePayload);
     if (kycToken == null) throw new Error("Handshake failed");
 
     this._activityLog("[BlockPass]", kycToken);
@@ -336,12 +337,13 @@ class ServerSdk {
 
     this._activityLog("[BlockPass]", kycProfile);
 
-    const kycRecord = await Promise.resolve(this.findKycById(kycProfile.id));
+    let kycRecord = await Promise.resolve(this.findKycById(kycProfile.id));
 
     if (!kycRecord)
       return {
-        status: "notFound"
-      };
+        status: "notFound",
+        ...this._serviceRequirement()
+      }
 
     const kycStatus = await Promise.resolve(this.queryKycStatus({ kycRecord }));
 
@@ -352,6 +354,27 @@ class ServerSdk {
       throw new Error("[queryKycStatus] return missing fields: status");
     if (!identities)
       throw new Error("[queryKycStatus] return missing fields: identities");
+
+    // Notify sso complete
+    let payload = {};
+    if (sessionCode) {
+      const ssoData = await Promise.resolve(
+        this.generateSsoPayload
+          ? this.generateSsoPayload({
+            kycProfile,
+            kycRecord,
+            kycToken,
+            payload
+          })
+          : {}
+      );
+      const res = await this.blockPassProvider.notifyLoginComplete(
+        kycToken,
+        sessionCode,
+        ssoData
+      );
+      this._activityLog("[BlockPass] login success", res);
+    }
 
     return {
       ...kycStatus
@@ -432,6 +455,26 @@ class ServerSdk {
     }
   }
 
+  _serviceRequirement()       {
+    const { requiredFields, certs, optionalFields } = this
+
+    const identities = requiredFields.map(itm => {
+      return {
+        slug: itm,
+        status: ""
+      }
+    })
+
+    const certificates = []
+
+    return {
+      identities,
+      certificates
+    }
+
+  }
+
+  //-----------------------------------------------------------------------------------
   /**
    * -----------------------------------------------------------------------------------
    * Check Merkle proof for invidual field

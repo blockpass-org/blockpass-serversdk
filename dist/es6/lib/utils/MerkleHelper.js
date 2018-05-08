@@ -7,6 +7,7 @@ function _hash(value) {
     .digest("hex");
 }
 
+module.exports.hash = _hash;
 module.exports.validateField = function(rootHash, fieldRawData, proofPath) {
   const rawHash = _hash(fieldRawData);
   const beginHash = _hash(rawHash + rawHash);

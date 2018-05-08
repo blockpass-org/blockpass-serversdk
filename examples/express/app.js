@@ -214,9 +214,9 @@ router.post('/api/register', async (req, res) => {
 //-------------------------------------------------------------------------
 router.post('/api/status', async (req, res) => {
     try {
-        const code = req.body.code
+        const { code, sessionCode } = req.body
 
-        const payload = await serverSdk.queryStatusFlow({ code })
+        const payload = await serverSdk.queryStatusFlow({ code, sessionCode })
         return res.json(payload)
     } catch (ex) {
         console.error(ex)

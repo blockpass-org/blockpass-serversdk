@@ -113,6 +113,7 @@ Query status of kyc record
 
 -   `params` **[Object][31]** 
     -   `params.code`  
+    -   `params.sessionCode`  
 
 Returns **[Promise][32]&lt;[MobileAppKycRecordStatus][35]>** 
 

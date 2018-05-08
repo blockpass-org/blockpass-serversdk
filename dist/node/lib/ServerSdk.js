@@ -169,12 +169,6 @@ class ServerSdk {
       let kycRecord = yield Promise.resolve(_this2.findKycById(kycId));
       if (!kycRecord) throw new Error("Kyc record could not found");
 
-      const criticalFieldsCheck = _this2.requiredFields.every(function (val) {
-        return slugList.indexOf(val) !== -1 && userRawData[val] != null;
-      });
-
-      if (!criticalFieldsCheck) throw new Error("Missing critical slug");
-
       // query kyc profile
       const kycProfile = yield _this2.blockPassProvider.doMatchingData(kycToken);
       if (kycProfile == null) throw new Error("Sync info failed");
@@ -271,14 +265,19 @@ class ServerSdk {
    * @param {Object} params
    */
   queryStatusFlow({
-    code
+    code,
+    sessionCode
   }) {
     var _this4 = this;
 
     return _asyncToGenerator(function* () {
       if (code == null) throw new Error("Missing code or sessionCode");
 
-      const kycToken = yield _this4.blockPassProvider.doHandShake(code);
+      let handShakePayload = [code];
+
+      if (sessionCode) handShakePayload.push(sessionCode);
+
+      const kycToken = yield _this4.blockPassProvider.doHandShake(...handShakePayload);
       if (kycToken == null) throw new Error("Handshake failed");
 
       _this4._activityLog("[BlockPass]", kycToken);
@@ -288,11 +287,11 @@ class ServerSdk {
 
       _this4._activityLog("[BlockPass]", kycProfile);
 
-      const kycRecord = yield Promise.resolve(_this4.findKycById(kycProfile.id));
+      let kycRecord = yield Promise.resolve(_this4.findKycById(kycProfile.id));
 
-      if (!kycRecord) return {
+      if (!kycRecord) return _extends({
         status: "notFound"
-      };
+      }, _this4._serviceRequirement());
 
       const kycStatus = yield Promise.resolve(_this4.queryKycStatus({ kycRecord }));
 
@@ -303,6 +302,19 @@ class ServerSdk {
 
       if (!status) throw new Error("[queryKycStatus] return missing fields: status");
       if (!identities) throw new Error("[queryKycStatus] return missing fields: identities");
+
+      // Notify sso complete
+      let payload = {};
+      if (sessionCode) {
+        const ssoData = yield Promise.resolve(_this4.generateSsoPayload ? _this4.generateSsoPayload({
+          kycProfile,
+          kycRecord,
+          kycToken,
+          payload
+        }) : {});
+        const res = yield _this4.blockPassProvider.notifyLoginComplete(kycToken, sessionCode, ssoData);
+        _this4._activityLog("[BlockPass] login success", res);
+      }
 
       return _extends({}, kycStatus);
     })();
@@ -380,6 +392,28 @@ class ServerSdk {
     }
   }
 
+  _serviceRequirement() {
+    const requiredFields = this.requiredFields,
+          certs = this.certs,
+          optionalFields = this.optionalFields;
+
+
+    const identities = requiredFields.map(itm => {
+      return {
+        slug: itm,
+        status: ""
+      };
+    });
+
+    const certificates = [];
+
+    return {
+      identities,
+      certificates
+    };
+  }
+
+  //-----------------------------------------------------------------------------------
   /**
    * -----------------------------------------------------------------------------------
    * Check Merkle proof for invidual field

@@ -162,4 +162,23 @@ describe("login", () => {
         blockpassApiMock.clearAll();
     })
 
+    it("[found][sso] query-kyc", async () => {
+        const bpFakeUserId = '5ad862240a176722f25fede3';
+        const sessionCode = '1';
+
+        // Mock API 
+        blockpassApiMock.mockHandShake(FAKE_BASEURL, bpFakeUserId)
+        blockpassApiMock.mockMatchingData(FAKE_BASEURL, bpFakeUserId, null, 1)
+        blockpassApiMock.mockSSoComplete(FAKE_BASEURL);
+
+        const ins = createIns();
+
+        const step1 = await ins.queryStatusFlow({ code: bpFakeUserId, sessionCode  })
+
+        expect(step1.status).toEqual('waiting')
+
+        blockpassApiMock.checkPending();
+        blockpassApiMock.clearAll();
+    })
+
 });
