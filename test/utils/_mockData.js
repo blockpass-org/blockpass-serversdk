@@ -7,7 +7,7 @@ module.exports.KYCModel = [
         email: 'Susanna.Durgan89@yahoo.com',
         bpToken: {
             "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJCTE9DS1BBU1MiLCJzdWIiOiI1YWQ4NjIyNDBhMTc2NzIyZjI1ZmVkZTIiLCJhdWQiOiIzcmRfc2VydmljZV9kZW1vIiwiZXhwIjoxNTI0NDMzMTM5LCJpYXQiOjE1MjQxOTcxMzksImp0aSI6IjU0NjY5NzAxZjY1YTg4NzllNDUwNzdiZTcwYTg0MzgyIn0.LVDTfo19N_L_YQ7d1AGlUYdYy_iUNqz4nxwDa5cSRvQ",
-            "expires_in": new Date("3018-04-20T05:05:40.588Z"),
+            "expires_at": new Date("3018-04-20T05:05:40.588Z"),
             "refresh_token": "54669701f65a8879e45077be70a84382"
         }
     },
@@ -17,7 +17,7 @@ module.exports.KYCModel = [
         blockPassID: '1522257024960',
         bpToken: {
             "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJCTE9DS1BBU1MiLCJzdWIiOiI1YWQ4NjIyNDBhMTc2NzIyZjI1ZmVkZTIiLCJhdWQiOiIzcmRfc2VydmljZV9kZW1vIiwiZXhwIjoxNTI0NDMzMTM5LCJpYXQiOjE1MjQxOTcxMzksImp0aSI6IjU0NjY5NzAxZjY1YTg4NzllNDUwNzdiZTcwYTg0MzgyIn0.LVDTfo19N_L_YQ7d1AGlUYdYy_iUNqz4nxwDa5cSRvQ",
-            "expires_in": new Date("3018-04-20T05:05:40.588Z"),
+            "expires_at": new Date("3018-04-20T05:05:40.588Z"),
             "refresh_token": "54669701f65a8879e45077be70a84382"
         }
     },
@@ -25,7 +25,7 @@ module.exports.KYCModel = [
         "_id": "5ad967142219d02223ae44b2",
         "bpToken": {
             "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJCTE9DS1BBU1MiLCJzdWIiOiI1YWQ4NjIyNDBhMTc2NzIyZjI1ZmVkZTIiLCJhdWQiOiIzcmRfc2VydmljZV9kZW1vIiwiZXhwIjoxNTI0NDMzMTM5LCJpYXQiOjE1MjQxOTcxMzksImp0aSI6IjU0NjY5NzAxZjY1YTg4NzllNDUwNzdiZTcwYTg0MzgyIn0.LVDTfo19N_L_YQ7d1AGlUYdYy_iUNqz4nxwDa5cSRvQ",
-            "expires_in": new Date("3018-04-20T05:05:40.588Z"),
+            "expires_at": new Date("3018-04-20T05:05:40.588Z"),
             "refresh_token": "54669701f65a8879e45077be70a84382"
         },
         "status": "waiting",
@@ -45,7 +45,7 @@ module.exports.KYCModel = [
         "_id": "5ad967142219d02223ae44b3",
         "bpToken": {
             "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJCTE9DS1BBU1MiLCJzdWIiOiI1YWQ4NjIyNDBhMTc2NzIyZjI1ZmVkZTIiLCJhdWQiOiIzcmRfc2VydmljZV9kZW1vIiwiZXhwIjoxNTI0NDMzMTM5LCJpYXQiOjE1MjQxOTcxMzksImp0aSI6IjU0NjY5NzAxZjY1YTg4NzllNDUwNzdiZTcwYTg0MzgyIn0.LVDTfo19N_L_YQ7d1AGlUYdYy_iUNqz4nxwDa5cSRvQ",
-            "expires_in": new Date("1018-04-20T05:05:40.588Z"),
+            "expires_at": new Date("1018-04-20T05:05:40.588Z"),
             "refresh_token": "54669701f65a8879e45077be70a84382"
         },
         "status": "waiting",
@@ -73,7 +73,7 @@ module.exports.KYCModel = [
         "__v": 0,
         "bpToken": {
             "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJCTE9DS1BBU1MiLCJzdWIiOiI1YWRkOWQwNmQ1Mjg4ODc5ODliMzYyZDQiLCJhdWQiOiIzcmRfc2VydmljZV9kZW1vIiwiZXhwIjoxNTI0NzE4OTgzLCJpYXQiOjE1MjQ0ODI5ODMsImp0aSI6IjE2MmYzODMyMDk1YmNmNWQyN2MwZGMzNmQ4YzYzMWYwIn0.59s2AiewKMtvvnwZLh92mSt-yh-92uuVQhcqCuyk5Qs",
-            "expires_in": new Date("3018-04-23T12:29:44.453Z"),
+            "expires_at": new Date("3018-04-23T12:29:44.453Z"),
             "refresh_token": "162f3832095bcf5d27c0dc36d8c631f0"
         },
         "fristName": "Katlyn",

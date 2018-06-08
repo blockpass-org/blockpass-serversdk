@@ -81,3 +81,16 @@ module.exports.mockQueryRefreshToken = function (baseUrl, response = null) {
         })
         .reply(200, response)
 }
+
+module.exports.mockUserNotice = function (baseUrl, response = null) {
+    response = response || {
+        status: 'success',
+        proofList: {}
+    }
+
+    nock(baseUrl)
+        .post(api.NOTIFICATION_PATH, (body) => {
+            return true
+        })
+        .reply(200, response)
+}

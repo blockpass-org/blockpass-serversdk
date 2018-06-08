@@ -60,7 +60,12 @@ async function updateKyc({
 
     const waitingJob = await Promise.all(jobs);
 
-    kycRecord.bpToken = kycToken
+    // calculate token expired date from 'expires_in'
+    const expiredDate = new Date(Date.now() + kycToken.expires_in * 1000)
+    kycRecord.bpToken = {
+        ...kycToken,
+        expires_at: expiredDate
+    }
     kycRecord.rootHash = rootHash
     kycRecord.smartContractId = smartContractId
     kycRecord.isSynching = isSynching
