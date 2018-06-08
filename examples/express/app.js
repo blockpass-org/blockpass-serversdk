@@ -2,11 +2,11 @@ const express = require('express')
 const bodyParser = require('body-parser');
 const cors = require('cors')
 const multer = require('multer');
-const ServerSDK = require('../../dist');
+const ServerSDK = require('../../dist/node');
 const { KYCModel, FileStorage } = require('./SimpleStorage');
 
 const config = {
-    BASE_URL: 'http://api.sandbox.blockpass.org',
+    BASE_URL: 'https://sandbox-api.blockpass.org',
     BLOCKPASS_CLIENT_ID: 'developer_service',
     BLOCKPASS_SECRET_ID: 'developer_service',
     REQUIRED_FIELDS: ['phone'],
@@ -24,7 +24,7 @@ const serverSdk = new ServerSDK({
     secretId: config.BLOCKPASS_SECRET_ID,
     requiredFields: config.REQUIRED_FIELDS,
     optionalFields: config.OPTIONAL_FIELDS,
-    certs: config.OPTIONAL_CERTS
+    certs: config.OPTIONAL_CERTS,
 
     // Custom implement
     findKycById: findKycById,
@@ -63,11 +63,31 @@ async function updateKyc({
 }) {
     const { id, smartContractId, rootHash, isSynching } = kycProfile;
 
+    if (!kycRecord.identities)
+        kycRecord.identities = {}
+
+    if (!kycRecord.certs)
+        kycRecord.certs = {}
+
     const jobs = Object.keys(userRawData).map(async (key) => {
         const metaData = userRawData[key];
 
-        if (metaData.type == 'string')
-            return kycRecord[key] = metaData.value
+        if (metaData.type == 'string') {
+            if (metaData.isCert)
+                return kycRecord.certs[key] = {
+                    slug: key,
+                    value: metaData.value,
+                    status: 'received',
+                    comment: ''
+                }
+            else
+                return kycRecord.identities[key] = {
+                    slug: key,
+                    value: metaData.value,
+                    status: 'received',
+                    comment: ''
+                }
+        }
 
         const { buffer, originalname } = metaData;
         const ext = originalname.split('.')[1];
@@ -78,7 +98,13 @@ async function updateKyc({
             fileBuffer: buffer
         })
 
-        return kycRecord[key] = fileHandler._id
+        return kycRecord[key] = {
+            slug: key,
+            value: fileHandler._id,
+            isFile: true,
+            status: 'received',
+            comment: ''
+        }
     })
 
     const waitingJob = await Promise.all(jobs);
@@ -90,6 +116,7 @@ async function updateKyc({
         expires_at: expiredDate
     }
 
+    kycRecord.status = "inreview"
     kycRecord.rootHash = rootHash
     kycRecord.smartContractId = smartContractId
     kycRecord.isSynching = isSynching
@@ -109,18 +136,41 @@ async function generateSsoPayload({ kycProfile, kycRecord, kycToken, payload }) 
 }
 
 async function queryKycStatus({ kycRecord }) {
-    const status = kycRecord.status
+    const { status, identities, certs } = kycRecord
+
+
+    // status meaning:  
+    //  - "received": data recieved by service and under review
+    //  - "approved": data fields approved by service
+    //  - "rejected": data rejected by service. Please provide comments for this 
+    //     => Mobile app will asking user to update
+    //  - "missing": data fields missing - Uploading error
+    //     => Mobile app will asking user to re-upload
+    const identities_status = Object.keys(identities).map((key) => {
+        const itm = identities[key]
+        const { slug, status, comment } = itm;
+        return {
+            slug,
+            status,
+            comment
+        }
+    })
+
+    const certs_status = Object.keys(certs).map((key) => {
+        const itm = certs[key]
+        const { slug, status } = itm;
+        return {
+            slug,
+            status
+        }
+    })
 
     return {
         status,
         message: 'This process usually take 2 working days',
         createdDate: new Date(),
-        identities: [{
-            slug: 'phone',
-            status: 'received', //"received" | "approved" | "rejected" | "missing"
-            comment: ''
-        }],
-        certificates: []
+        identities: identities_status,
+        certificates: certs_status
     }
 }
 
@@ -149,7 +199,7 @@ router.get('/', (req, res) => {
 //-------------------------------------------------------------------------
 // Api
 //-------------------------------------------------------------------------
-router.post('/api/uploadData',
+router.post('/blockpass/api/uploadData',
     upload.any(),
     async (req, res) => {
         try {
@@ -160,9 +210,15 @@ router.post('/api/uploadData',
             const userRawData = {}
 
             Object.keys(userRawFields).forEach(key => {
+                const originalKey = key
+                const isCert = key.startsWith('[cer]')
+                if (isCert)
+                    key = key.slice('[cer]'.length)
+
                 userRawData[key] = {
                     type: 'string',
-                    value: userRawFields[key]
+                    value: userRawFields[originalKey],
+                    isCert
                 }
             })
 
@@ -186,7 +242,7 @@ router.post('/api/uploadData',
     })
 
 //-------------------------------------------------------------------------
-router.post('/api/login', async (req, res) => {
+router.post('/blockpass/api/login', async (req, res) => {
     try {
         const { code, sessionCode } = req.body;
 
@@ -202,7 +258,7 @@ router.post('/api/login', async (req, res) => {
 })
 
 //-------------------------------------------------------------------------
-router.post('/api/register', async (req, res) => {
+router.post('/blockpass/api/register', async (req, res) => {
     try {
         const { code } = req.body;
 
@@ -218,12 +274,55 @@ router.post('/api/register', async (req, res) => {
 })
 
 //-------------------------------------------------------------------------
-router.post('/api/status', async (req, res) => {
+router.post('/blockpass/api/status', async (req, res) => {
     try {
         const { code, sessionCode } = req.body
 
         const payload = await serverSdk.queryStatusFlow({ code, sessionCode })
         return res.json(payload)
+    } catch (ex) {
+        console.error(ex)
+        return res.status(500).json({
+            err: 500,
+            msg: ex.message,
+        })
+    }
+})
+
+//-------------------------------------------------------------------------
+router.post('/util/sendPn', async (req, res) => {
+    try {
+        const { bpId, title = "title", message = "body" } = req.body
+
+        if (!bpId)
+            return res.status(400).json({
+                err: 400,
+                msg: 'Missing blockpass Id',
+            })
+
+        const kycRecord = await KYCModel.findOne({ blockPassID: kycId })
+
+        if (!kycRecord)
+            return res.status(404).json({
+                err: 404,
+                msg: 'kycRecord not found',
+            })
+
+        const response = await serverSdk.userNotify({
+            title,
+            message,
+            bpToken: kycRecord.bpToken
+        })
+
+        const { bpToken } = response
+
+        // update refreshed Token
+        if (bpToken != kycRecord.bpToken) {
+            kycRecord.bpToken = bpToken
+            await kycRecord.save()
+        }
+
+        return res.json(response.res)
     } catch (ex) {
         console.error(ex)
         return res.status(500).json({
