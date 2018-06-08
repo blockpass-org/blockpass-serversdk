@@ -19,7 +19,7 @@ class BlockpassHttpProvider {
     this._secretId = secretId;
   }
 
-  doHandShake(code, session_code) {
+  queryServiceMetadata() {
     var _this = this;
 
     return _asyncToGenerator(function* () {
@@ -27,6 +27,30 @@ class BlockpassHttpProvider {
         const _clientId = _this._clientId,
               _secretId = _this._secretId,
               _baseUrl = _this._baseUrl;
+
+
+        const metaDataResponse = yield request.get(_baseUrl + api.META_DATA_PATH + _this._clientId);
+
+        if (metaDataResponse.status !== 200) {
+          console.error("[BlockPass] queryServiceMetadata Error", metaDataResponse.text);
+          return null;
+        }
+
+        return metaDataResponse.body;
+      } catch (error) {
+        console.error("queryServiceMetadata failed: ", error);
+        return null;
+      }
+    })();
+  }
+  doHandShake(code, session_code) {
+    var _this2 = this;
+
+    return _asyncToGenerator(function* () {
+      try {
+        const _clientId = _this2._clientId,
+              _secretId = _this2._secretId,
+              _baseUrl = _this2._baseUrl;
 
 
         const handShakeResponse = yield request.post(_baseUrl + api.HAND_SHAKE_PATH).send({
@@ -51,13 +75,13 @@ class BlockpassHttpProvider {
   }
 
   doMatchingData(handShakeToken) {
-    var _this2 = this;
+    var _this3 = this;
 
     return _asyncToGenerator(function* () {
       try {
-        const _clientId = _this2._clientId,
-              _secretId = _this2._secretId,
-              _baseUrl = _this2._baseUrl;
+        const _clientId = _this3._clientId,
+              _secretId = _this3._secretId,
+              _baseUrl = _this3._baseUrl;
 
 
         const userProfileResponse = yield request.post(_baseUrl + api.MATCHING_INFO_PATH).set({
@@ -78,13 +102,13 @@ class BlockpassHttpProvider {
   }
 
   notifyLoginComplete(bpToken, sessionData, extraData) {
-    var _this3 = this;
+    var _this4 = this;
 
     return _asyncToGenerator(function* () {
       try {
-        const _clientId = _this3._clientId,
-              _secretId = _this3._secretId,
-              _baseUrl = _this3._baseUrl;
+        const _clientId = _this4._clientId,
+              _secretId = _this4._secretId,
+              _baseUrl = _this4._baseUrl;
 
 
         const ssoCompleteResponse = yield request.post(_baseUrl + api.SSO_COMPETE_PATH).set({
@@ -111,13 +135,13 @@ class BlockpassHttpProvider {
   }
 
   notifyLoginFailed(bpToken, error) {
-    var _this4 = this;
+    var _this5 = this;
 
     return _asyncToGenerator(function* () {
       try {
-        const _clientId = _this4._clientId,
-              _secretId = _this4._secretId,
-              _baseUrl = _this4._baseUrl;
+        const _clientId = _this5._clientId,
+              _secretId = _this5._secretId,
+              _baseUrl = _this5._baseUrl;
 
 
         const ssoCompleteResponse = yield request.post(_baseUrl + api.SSO_COMPETE_PATH).set({
@@ -144,17 +168,17 @@ class BlockpassHttpProvider {
   }
 
   _checkAndRefreshAccessToken(bpToken) {
-    var _this5 = this;
+    var _this6 = this;
 
     return _asyncToGenerator(function* () {
       try {
-        const _clientId = _this5._clientId,
-              _secretId = _this5._secretId,
-              _baseUrl = _this5._baseUrl;
+        const _clientId = _this6._clientId,
+              _secretId = _this6._secretId,
+              _baseUrl = _this6._baseUrl;
 
 
         const now = new Date();
-        if (bpToken.expires_in > now) return bpToken;
+        if (bpToken.expires_at && bpToken.expires_at > now) return bpToken;
 
         const access_token = bpToken.access_token,
               refresh_token = bpToken.refresh_token;
@@ -179,14 +203,14 @@ class BlockpassHttpProvider {
   }
 
   queryProofOfPath(bpToken, slug_list) {
-    var _this6 = this;
+    var _this7 = this;
 
     return _asyncToGenerator(function* () {
       // check refresh bpToken
-      bpToken = yield _this6._checkAndRefreshAccessToken(bpToken);
-      const _clientId = _this6._clientId,
-            _secretId = _this6._secretId,
-            _baseUrl = _this6._baseUrl;
+      bpToken = yield _this7._checkAndRefreshAccessToken(bpToken);
+      const _clientId = _this7._clientId,
+            _secretId = _this7._secretId,
+            _baseUrl = _this7._baseUrl;
 
 
       try {
@@ -203,6 +227,43 @@ class BlockpassHttpProvider {
 
         return {
           proofOfPath: ssoQueryPathResponse.body,
+          bpToken
+        };
+      } catch (error) {
+        console.error(error);
+        return null;
+      }
+    })();
+  }
+  notifyUser(bpToken, msg, title = 'Information') {
+    var _this8 = this;
+
+    return _asyncToGenerator(function* () {
+      // check refresh bpToken
+      bpToken = yield _this8._checkAndRefreshAccessToken(bpToken);
+      const _clientId = _this8._clientId,
+            _secretId = _this8._secretId,
+            _baseUrl = _this8._baseUrl;
+
+
+      try {
+        const putCertResponse = yield request.post(_baseUrl + api.NOTIFICATION_PATH).set({
+          Authorization: bpToken.access_token
+        }).send({
+          noti: {
+            type: 'info',
+            title,
+            mssg: msg
+          }
+        });
+
+        if (putCertResponse.status != 200) {
+          console.log("[BlockPass] notifyUser Error", putCertResponse.text);
+          return null;
+        }
+
+        return {
+          res: putCertResponse.body,
           bpToken
         };
       } catch (error) {

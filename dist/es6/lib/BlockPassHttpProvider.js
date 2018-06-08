@@ -13,6 +13,25 @@ class BlockpassHttpProvider {
     this._secretId = secretId;
   }
 
+  async queryServiceMetadata() {
+    try {
+      const { _clientId, _secretId, _baseUrl } = this;
+
+      const metaDataResponse = await request
+        .get(_baseUrl + api.META_DATA_PATH + this._clientId)
+
+      if (metaDataResponse.status !== 200) {
+        console.error("[BlockPass] queryServiceMetadata Error", metaDataResponse.text);
+        return null;
+      }
+
+      return metaDataResponse.body
+
+    } catch (error) {
+      console.error("queryServiceMetadata failed: ", error);
+      return null;
+    }
+  }
   async doHandShake(code, session_code) {
     try {
       const { _clientId, _secretId, _baseUrl } = this;
@@ -134,7 +153,7 @@ class BlockpassHttpProvider {
       const { _clientId, _secretId, _baseUrl } = this;
 
       const now = new Date();
-      if (bpToken.expires_in > now) return bpToken;
+      if (bpToken.expires_at && bpToken.expires_at > now) return bpToken;
 
       const { access_token, refresh_token } = bpToken;
       const refreshTokenResponse = await request
@@ -185,6 +204,42 @@ class BlockpassHttpProvider {
 
       return {
         proofOfPath: ssoQueryPathResponse.body,
+        bpToken
+      };
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
+  }
+  async notifyUser(bpToken, msg, title = 'Information') {
+    // check refresh bpToken
+    bpToken = await this._checkAndRefreshAccessToken(bpToken);
+    const { _clientId, _secretId, _baseUrl } = this;
+
+    try {
+      const putCertResponse = await request
+        .post(_baseUrl + api.NOTIFICATION_PATH)
+        .set({
+          Authorization: bpToken.access_token
+        })
+        .send({
+          noti: {
+            type: 'info',
+            title,
+            mssg: msg
+          }
+        });
+
+      if (putCertResponse.status != 200) {
+        console.log(
+          "[BlockPass] notifyUser Error",
+          putCertResponse.text
+        );
+        return null;
+      }
+
+      return {
+        res: putCertResponse.body,
         bpToken
       };
     } catch (error) {

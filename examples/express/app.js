@@ -7,11 +7,11 @@ const { KYCModel, FileStorage } = require('./SimpleStorage');
 
 const config = {
     BASE_URL: 'http://api.sandbox.blockpass.org',
-    BLOCKPASS_CLIENT_ID: 'test',
-    BLOCKPASS_SECRET_ID: 'test',
+    BLOCKPASS_CLIENT_ID: 'developer_service',
+    BLOCKPASS_SECRET_ID: 'developer_service',
     REQUIRED_FIELDS: ['phone'],
     OPTIONAL_FIELDS: [],
-    OPTIONAL_CERTS: ['onfido']
+    OPTIONAL_CERTS: ['onfido', "onfido-service-cert", "complyadvantage-service-cert"]
 }
 
 
@@ -83,7 +83,13 @@ async function updateKyc({
 
     const waitingJob = await Promise.all(jobs);
 
-    kycRecord.bpToken = kycToken
+    // calculate token expired date from 'expires_in'
+    const expiredDate = new Date(Date.now() + kycToken.expires_in * 1000)
+    kycRecord.bpToken = {
+        ...kycToken,
+        expires_at: expiredDate
+    }
+
     kycRecord.rootHash = rootHash
     kycRecord.smartContractId = smartContractId
     kycRecord.isSynching = isSynching

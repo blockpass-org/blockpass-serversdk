@@ -18,6 +18,7 @@ class ServerSdk {
                            
                   
                    
+                   
                                                
                                                  
 
@@ -83,6 +84,7 @@ class ServerSdk {
       clientId,
       secretId
     });
+    this.clientId = clientId;
     this.secretId = secretId;
     this.requiredFields = requiredFields;
     this.optionalFields = optionalFields;
@@ -318,7 +320,7 @@ class ServerSdk {
     sessionCode
   }   
                  
-                       
+                        
    )                                    {
     if (code == null) throw new Error("Missing code or sessionCode");
 
@@ -428,6 +430,29 @@ class ServerSdk {
     const res = await this.blockPassProvider.queryProofOfPath(
       kycToken,
       slugList
+    );
+    return res;
+  }
+
+  /**
+   * -----------------------------------------------------------------------------------
+   * Send Notification to user
+   * @param {Object} params
+   */
+  async userNotify({
+    message,
+    title,
+    bpToken
+  }    
+                    
+                  
+                     
+   )       {
+
+    const res = await this.blockPassProvider.notifyUser(
+      bpToken,
+      message,
+      title
     );
     return res;
   }

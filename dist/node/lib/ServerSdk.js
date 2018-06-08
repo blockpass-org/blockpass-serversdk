@@ -60,6 +60,7 @@ class ServerSdk {
       clientId,
       secretId
     });
+    this.clientId = clientId;
     this.secretId = secretId;
     this.requiredFields = requiredFields;
     this.optionalFields = optionalFields;
@@ -363,6 +364,25 @@ class ServerSdk {
 
     return _asyncToGenerator(function* () {
       const res = yield _this5.blockPassProvider.queryProofOfPath(kycToken, slugList);
+      return res;
+    })();
+  }
+
+  /**
+   * -----------------------------------------------------------------------------------
+   * Send Notification to user
+   * @param {Object} params
+   */
+  userNotify({
+    message,
+    title,
+    bpToken
+  }) {
+    var _this6 = this;
+
+    return _asyncToGenerator(function* () {
+
+      const res = yield _this6.blockPassProvider.notifyUser(bpToken, message, title);
       return res;
     })();
   }

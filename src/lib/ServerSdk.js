@@ -18,6 +18,7 @@ class ServerSdk {
   optionalFields: [string];
   certs: [string];
   secretId: string;
+  clientId: string;
   encodeSessionData: ?(payload: any) => string;
   decodeSessionData: ?(token: string) => ?Object;
 
@@ -83,6 +84,7 @@ class ServerSdk {
       clientId,
       secretId
     });
+    this.clientId = clientId;
     this.secretId = secretId;
     this.requiredFields = requiredFields;
     this.optionalFields = optionalFields;
@@ -428,6 +430,29 @@ class ServerSdk {
     const res = await this.blockPassProvider.queryProofOfPath(
       kycToken,
       slugList
+    );
+    return res;
+  }
+
+  /**
+   * -----------------------------------------------------------------------------------
+   * Send Notification to user
+   * @param {Object} params
+   */
+  async userNotify({
+    message,
+    title,
+    bpToken
+  } : {
+    message: string,
+    title: string,
+    bpToken: KycToken
+  }) : any {
+
+    const res = await this.blockPassProvider.notifyUser(
+      bpToken,
+      message,
+      title
     );
     return res;
   }

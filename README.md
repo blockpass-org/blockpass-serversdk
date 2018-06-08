@@ -165,7 +165,12 @@ async function updateKyc({
     // [Advance] - Link kyc record with existing user data in your database
     // Example: This email|phone contain in our database
 
-    kycRecord.bpToken = kycToken
+     // calculate token expired date from 'expires_in'
+    const expiredDate = new Date(Date.now() + kycToken.expires_in * 1000)
+    kycRecord.bpToken = {
+        ...kycToken,
+        expires_at: expiredDate
+    }
     kycRecord.rootHash = rootHash
     kycRecord.smartContractId = smartContractId
     kycRecord.isSynching = isSynching
