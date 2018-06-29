@@ -1,10 +1,12 @@
 {
-  "name": "sdk-server",
-  "version": "0.0.1",
+  "name": "bp-sdk-server",
+  "version": "1.2.1",
   "description": "Blockpass Sdk server",
   "license": "MIT",
-  "repository": "",
-  "main": "dist/index.js",
+  "repository": "https://github.com/blockpass-org/blockpass-serversdk",
+  "homepage": "https://blockpass.org/",
+  "main": "dist/node/index.js",
+  "module": "dist/es6/index.js",  
   "author": {
     "name": "Blockpass"
   },
