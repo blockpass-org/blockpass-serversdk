@@ -86,19 +86,6 @@ async function queryKycStatus({ kycRecord }) {
     }
 }
 
-async function needRecheckExistingKyc({ kycProfile, kycRecord, payload }) {
-
-    // if (!(kycRecord.fristName && kycRecord.phone && kycRecord.lastName))
-    //     return {
-    //         ...payload,
-    //         nextAction: 'upload',
-    //         requiredFields: REQUIRED_FIELDS,
-    //         optionalFields: OPTIONAL_FIELDS,
-    //     }
-
-    return payload;
-}
-
 //-------------------------------------------------------------------------
 async function generateSsoPayload({ kycProfile, kycRecord, kycToken, payload }) {
     return {
@@ -121,7 +108,6 @@ function createIns({ find, create, update, reCheck, query, ssoPayload } = {}) {
         createKyc: createKyc || create,
         updateKyc: updateKyc || update,
         queryKycStatus: queryKycStatus || query,
-        needRecheckExistingKyc: needRecheckExistingKyc || reCheck,
         generateSsoPayload: generateSsoPayload || ssoPayload
     })
 }
@@ -164,7 +150,7 @@ describe("register", () => {
         blockpassApiMock.clearAll();
     })
 
-    it("register[existing record]", async () => {
+    it("register[existing record] - error", async () => {
         const bpFakeUserId = '1522257024962';
 
         // Mock API 
@@ -173,9 +159,13 @@ describe("register", () => {
 
         const ins = createIns();
 
-        const step1 = await ins.registerFlow({code: bpFakeUserId})
-        expect(step1.nextAction).toEqual('none')
-
+        try {
+            const step1 = await ins.registerFlow({ code: bpFakeUserId })
+            expect(step1.nextAction).toEqual('none')
+        } catch (err) {
+            expect(err.message).toEqual('User has already registered')
+        }
+        
         blockpassApiMock.checkPending();
         blockpassApiMock.clearAll();
     })

@@ -76,26 +76,19 @@ async function updateKyc({
 //-------------------------------------------------------------------------
 async function queryKycStatus({ kycRecord }) {
     const status = kycRecord.status
-
+    const {phone} = kycRecord
+    const phoneStatus = {
+        status: phone ? 'recieved': 'missing',
+        slug: 'phone'
+    }
     return {
         status,
         message: '',
         createdDate: new Date(),
-        identities: [],
-        certificates: []
+        identities: [phoneStatus],
+        certificates: [],
+        allowResubmit: true
     }
-}
-
-async function needRecheckExistingKyc({ kycProfile, kycRecord, payload }) {
-
-    if (!(kycRecord.phone))
-        return {
-            ...payload,
-            nextAction: 'upload',
-            requiredFields: ['phone']
-        }
-
-    return payload;
 }
 
 //-------------------------------------------------------------------------
@@ -120,7 +113,6 @@ function createIns({ find, create, update, reCheck, query, ssoPayload } = {}) {
         createKyc: createKyc || create,
         updateKyc: updateKyc || update,
         queryKycStatus: queryKycStatus || query,
-        needRecheckExistingKyc: needRecheckExistingKyc || reCheck,
         generateSsoPayload: generateSsoPayload || ssoPayload
     })
 }
@@ -210,52 +202,65 @@ describe("login", () => {
         blockpassApiMock.clearAll();
     })
 
-    it("login[existing record]", async () => {
+    it("login[existing record] - error", async () => {
         const bpFakeUserId = '1522257024962';
         const sessionCode = '1xxx';
 
         // Mock API 
         blockpassApiMock.mockHandShake(FAKE_BASEURL, bpFakeUserId)
         blockpassApiMock.mockMatchingData(FAKE_BASEURL, bpFakeUserId, null, 1)
-        blockpassApiMock.mockSSoComplete(FAKE_BASEURL)
 
         const ins = createIns();
 
-        const step1 = await ins.loginFow({ code: bpFakeUserId, sessionCode })
-        expect(step1.nextAction).toEqual('none')
+        try {
+            const resStatus = await ins.loginFow({ code: bpFakeUserId, sessionCode })
+        } catch (err) {
+            expect(err.message).toEqual('User has already registered')
+        }
 
         blockpassApiMock.checkPending();
         blockpassApiMock.clearAll();
     })
 
-    it("login[existing record not full-fill] needRecheckExistingKyc return missing data", async () => {
+    it("login[existing record not full-fill] resubmit missing data", async () => {
         const bpFakeUserId = '1522257024960';
         const sessionCode = '1xxx';
 
         // Mock API 
-        blockpassApiMock.mockHandShake(FAKE_BASEURL, bpFakeUserId)
-        blockpassApiMock.mockMatchingData(FAKE_BASEURL, bpFakeUserId, null, 2)
+        blockpassApiMock.mockHandShake(FAKE_BASEURL, bpFakeUserId, null, 2)
+        blockpassApiMock.mockMatchingData(FAKE_BASEURL, bpFakeUserId, null, 3)
         blockpassApiMock.mockSSoComplete(FAKE_BASEURL)
 
         const ins = createIns();
 
-        const step1 = await ins.loginFow({ code: bpFakeUserId, sessionCode })
-        expect(step1.nextAction).toEqual('upload')
-        expect(step1.requiredFields).toEqual(['phone'])
+        // check status
+        const resStatus = await ins.queryStatusFlow({ code: bpFakeUserId, sessionCode })
+        expect(resStatus.allowResubmit).toEqual(true)
+        expect(resStatus.identities[0].slug).toEqual('phone')
+        expect(resStatus.identities[0].status).toEqual('missing')
 
+        // resubmit
+        const step2 = await ins.resubmitDataFlow({ 
+            code: bpFakeUserId, 
+            fieldList: ['phone'],
+            certList: []
+        })
+
+        expect(step2.nextAction).toEqual('upload')
+
+        // upload missing data
         const rawData = {
             "phone": {
                 type: "string",
-                value: faker.phone.phoneNumber()
+                value: '{"countryCode":"VNM","countryCode2":"vn","phoneNumber":"+84987543212","number":"987543212"}'
             }
         }
-        const step2 = await ins.updateDataFlow({
-            accessToken: step1.accessToken,
-            slugList: step1.requiredFields,
+        const step3 = await ins.updateDataFlow({
+            accessToken: step2.accessToken,
+            slugList: step2.requiredFields,
             ...rawData
         })
-
-        expect(step2.nextAction).toEqual('none')
+        expect(step3.nextAction).toEqual('none')
 
         blockpassApiMock.checkPending();
         blockpassApiMock.clearAll();

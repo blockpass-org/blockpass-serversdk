@@ -30,10 +30,11 @@ class ServerSdk {
     createKyc,
     updateKyc,
     queryKycStatus,
-    needRecheckExistingKyc,
+    onResubmitKycData,
     generateSsoPayload,
     encodeSessionData,
-    decodeSessionData
+    decodeSessionData,
+    debug
   }) {
     if (clientId == null || secretId == null) throw new Error("Missing clientId or secretId");
 
@@ -50,7 +51,7 @@ class ServerSdk {
     this.updateKyc = updateKyc;
     this.queryKycStatus = queryKycStatus;
 
-    this.needRecheckExistingKyc = needRecheckExistingKyc;
+    this.onResubmitKycData = onResubmitKycData;
     this.generateSsoPayload = generateSsoPayload;
     this.encodeSessionData = encodeSessionData;
     this.decodeSessionData = decodeSessionData;
@@ -65,6 +66,7 @@ class ServerSdk {
     this.requiredFields = requiredFields;
     this.optionalFields = optionalFields;
     this.certs = certs;
+    this.debug = debug;
   }
 
   /**
@@ -98,45 +100,23 @@ class ServerSdk {
 
       let kycRecord = yield Promise.resolve(_this.findKycById(kycProfile.id));
       const isNewUser = kycRecord == null;
-      if (isNewUser) kycRecord = yield Promise.resolve(_this.createKyc({ kycProfile }));
+      if (!isNewUser) throw new Error("User has already registered");
+
+      kycRecord = yield Promise.resolve(_this.createKyc({ kycProfile }));
 
       let payload = {};
-      if (isNewUser) {
-        payload.nextAction = "upload";
-        payload.requiredFields = _this.requiredFields;
-        payload.optionalFields = _this.optionalFields;
-        payload.certs = _this.certs;
-      } else {
-        payload.message = "welcome back";
-        payload.nextAction = "none";
-      }
+      payload.nextAction = "upload";
+      payload.requiredFields = _this.requiredFields;
+      payload.optionalFields = _this.optionalFields;
+      payload.certs = _this.certs;
 
-      if (kycRecord && _this.needRecheckExistingKyc) {
-        payload = yield Promise.resolve(_this.needRecheckExistingKyc({
-          kycProfile,
-          kycRecord,
-          kycToken,
-          payload
-        }));
-      }
-
-      // Nothing need to update. Notify sso complete
-      if (payload.nextAction === "none") {
-        const ssoData = yield Promise.resolve(_this.generateSsoPayload ? _this.generateSsoPayload({
-          kycProfile,
-          kycRecord,
-          kycToken,
-          payload
-        }) : {});
-        const res = yield _this.blockPassProvider.notifyLoginComplete(kycToken, sessionCode, ssoData);
-        _this._activityLog("[BlockPass] login success", res);
-      }
-
+      // Request upload data
       return _extends({
         accessToken: _this._encodeDataIntoToken({
           kycId: kycProfile.id,
           kycToken,
-          sessionCode
+          sessionCode,
+          redirectForm: 'login'
         })
       }, payload);
     })();
@@ -162,10 +142,11 @@ class ServerSdk {
 
       const decodeData = _this2._decodeDataFromToken(accessToken);
       if (!decodeData) throw new Error("Invalid Access Token");
+
       const kycId = decodeData.kycId,
             kycToken = decodeData.kycToken,
-            sessionCode = decodeData.sessionCode;
-
+            sessionCode = decodeData.sessionCode,
+            uploadSessionData = _objectWithoutProperties(decodeData, ["kycId", "kycToken", "sessionCode"]);
 
       let kycRecord = yield Promise.resolve(_this2.findKycById(kycId));
       if (!kycRecord) throw new Error("Kyc record could not found");
@@ -179,7 +160,8 @@ class ServerSdk {
         kycRecord,
         kycProfile,
         kycToken,
-        userRawData
+        userRawData,
+        uploadSessionData
       }));
 
       const payload = {
@@ -229,32 +211,21 @@ class ServerSdk {
 
       let kycRecord = yield Promise.resolve(_this3.findKycById(kycProfile.id));
       const isNewUser = kycRecord == null;
-      if (isNewUser) kycRecord = yield Promise.resolve(_this3.createKyc({ kycProfile }));
+      if (!isNewUser) throw new Error("User has already registered");
+
+      kycRecord = yield Promise.resolve(_this3.createKyc({ kycProfile }));
 
       let payload = {};
-      if (isNewUser) {
-        payload.nextAction = "upload";
-        payload.requiredFields = _this3.requiredFields;
-        payload.optionalFields = _this3.optionalFields;
-        payload.certs = _this3.certs;
-      } else {
-        payload.message = "welcome back";
-        payload.nextAction = "none";
-      }
-
-      if (kycRecord && _this3.needRecheckExistingKyc) {
-        payload = yield Promise.resolve(_this3.needRecheckExistingKyc({
-          kycProfile,
-          kycRecord,
-          kycToken,
-          payload
-        }));
-      }
+      payload.nextAction = "upload";
+      payload.requiredFields = _this3.requiredFields;
+      payload.optionalFields = _this3.optionalFields;
+      payload.certs = _this3.certs;
 
       return _extends({
         accessToken: _this3._encodeDataIntoToken({
           kycId: kycProfile.id,
-          kycToken
+          kycToken,
+          redirectForm: 'register'
         })
       }, payload);
     })();
@@ -323,8 +294,83 @@ class ServerSdk {
 
   /**
    * -----------------------------------------------------------------------------------
-   * Sign new Certificate and send to Blockpass
+   * Resubmit data flow
    * @param {Object} params
+   */
+  resubmitDataFlow({
+    code,
+    fieldList,
+    certList
+  }) {
+    var _this5 = this;
+
+    return _asyncToGenerator(function* () {
+
+      if (code == null) throw new Error("Missing code");
+      if (!fieldList || !certList) throw new Error("Missing fieldList or certList");
+
+      const fieldCheck = fieldList.every(function (itm) {
+        return _this5.requiredFields.indexOf(itm) !== -1;
+      });
+      const cerCheck = certList.every(function (itm) {
+        return _this5.certs.indexOf(itm) !== -1;
+      });
+      if (!fieldCheck || !cerCheck) throw new Error("Invalid fieldList or certList name");
+
+      let handShakePayload = [code];
+
+      const kycToken = yield _this5.blockPassProvider.doHandShake(...handShakePayload);
+      if (kycToken == null) throw new Error("Handshake failed");
+
+      _this5._activityLog("[BlockPass]", kycToken);
+
+      const kycProfile = yield _this5.blockPassProvider.doMatchingData(kycToken);
+      if (kycProfile == null) throw new Error("Sync info failed");
+
+      _this5._activityLog("[BlockPass]", kycProfile);
+
+      let kycRecord = yield Promise.resolve(_this5.findKycById(kycProfile.id));
+
+      if (!kycRecord) throw new Error("[BlockPass][resubmitDataFlow] kycRecord not found");
+
+      let payload = {
+        nextAction: 'upload',
+        requiredFields: fieldList,
+        certs: certList
+      };
+
+      if (_this5.onResubmitKycData) {
+        payload = yield Promise.resolve(_this5.onResubmitKycData({
+          kycProfile,
+          kycRecord,
+          kycToken,
+          payload,
+          fieldList,
+          certList
+        }));
+      }
+
+      let accessToken = null;
+      if (payload.nextAction === 'upload') accessToken = _this5._encodeDataIntoToken({
+        kycId: kycProfile.id,
+        kycToken,
+        redirectForm: 'reSubmit',
+        reSubmitInfo: {
+          fieldList,
+          certList
+        }
+      });
+
+      return _extends({
+        accessToken
+      }, payload);
+    })();
+  }
+
+  //-----------------------------------------------------------------------------------
+  /**
+   * Sign new Certificate and send to Blockpass
+   * 
    */
   signCertificate({
     id,
@@ -360,10 +406,10 @@ class ServerSdk {
     kycToken,
     slugList
   }) {
-    var _this5 = this;
+    var _this6 = this;
 
     return _asyncToGenerator(function* () {
-      const res = yield _this5.blockPassProvider.queryProofOfPath(kycToken, slugList);
+      const res = yield _this6.blockPassProvider.queryProofOfPath(kycToken, slugList);
       return res;
     })();
   }
@@ -378,18 +424,18 @@ class ServerSdk {
     title,
     bpToken
   }) {
-    var _this6 = this;
+    var _this7 = this;
 
     return _asyncToGenerator(function* () {
 
-      const res = yield _this6.blockPassProvider.notifyUser(bpToken, message, title);
+      const res = yield _this7.blockPassProvider.notifyUser(bpToken, message, title);
       return res;
     })();
   }
 
   //-----------------------------------------------------------------------------------
   _activityLog(...args) {
-    console.log("\x1b[32m%s\x1b[0m", "[info]", ...args);
+    if (this.debug) console.log("\x1b[32m%s\x1b[0m", "[info]", ...args);
   }
 
   _encodeDataIntoToken(payload) {
@@ -606,7 +652,20 @@ module.exports = ServerSdk;
  * @param {KycRecord} params.kycRecord
  * @param {KycToken} params.kycToken
  * @param {Object} params.payload
- * @returns {Promise<Object>}
+ * @returns {Promise<BlockpassMobileResponsePayload>}
+ */
+
+
+/**
+ * --------------------------------------------------------
+ * Handler function processing user resubmit request
+ * @callback
+ * @param {Object} params
+ * @param {KycProfile} params.kycProfile
+ * @param {KycRecord} params.kycRecord
+ * @param {KycToken} params.kycToken
+ * @param {Object} params.payload
+ * @returns {Promise<BlockpassMobileResponsePayload>}
  */
 
 

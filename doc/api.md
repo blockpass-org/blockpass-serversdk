@@ -7,37 +7,39 @@
     -   [updateDataFlow][3]
     -   [registerFlow][4]
     -   [queryStatusFlow][5]
-    -   [signCertificate][6]
-    -   [rejectCertificate][7]
-    -   [queryProofOfPath][8]
-    -   [userNotify][9]
-    -   [merkleProofCheckSingle][10]
--   [ConstructorParams][11]
--   [KycRecord][12]
--   [RawDataUploadDataRequest][13]
--   [RawDataString][14]
--   [RawDataFile][15]
--   [MobileAppKycRecordStatus][16]
--   [RecordStatus][17]
--   [RecordFieldStatus][18]
--   [InvidualFieldStatus][19]
--   [KycProfile][20]
--   [SyncStatus][21]
--   [KycToken][22]
--   [NextActionType][23]
--   [BlockpassMobileResponsePayload][24]
--   [FindKycByIdHandler][25]
--   [CreateKycHandler][26]
--   [UpdateKycHandler][27]
--   [QueryKycStatusHandler][28]
--   [ReCheckKycRecordHandler][29]
--   [GenerateSsoPayloadHandler][30]
+    -   [resubmitDataFlow][6]
+    -   [signCertificate][7]
+    -   [rejectCertificate][8]
+    -   [queryProofOfPath][9]
+    -   [userNotify][10]
+    -   [merkleProofCheckSingle][11]
+-   [ConstructorParams][12]
+-   [KycRecord][13]
+-   [RawDataUploadDataRequest][14]
+-   [RawDataString][15]
+-   [RawDataFile][16]
+-   [MobileAppKycRecordStatus][17]
+-   [RecordStatus][18]
+-   [RecordFieldStatus][19]
+-   [InvidualFieldStatus][20]
+-   [KycProfile][21]
+-   [SyncStatus][22]
+-   [KycToken][23]
+-   [NextActionType][24]
+-   [BlockpassMobileResponsePayload][25]
+-   [FindKycByIdHandler][26]
+-   [CreateKycHandler][27]
+-   [UpdateKycHandler][28]
+-   [QueryKycStatusHandler][29]
+-   [ReCheckKycRecordHandler][30]
+-   [ReSubmitCheckHandler][31]
+-   [GenerateSsoPayloadHandler][32]
 
 ## ServerSdk
 
 **Parameters**
 
--   `params` **[ConstructorParams][31]** 
+-   `params` **[ConstructorParams][33]** 
     -   `params.baseUrl`  
     -   `params.clientId`  
     -   `params.secretId`  
@@ -48,10 +50,11 @@
     -   `params.createKyc`  
     -   `params.updateKyc`  
     -   `params.queryKycStatus`  
-    -   `params.needRecheckExistingKyc`  
+    -   `params.onResubmitKycData`  
     -   `params.generateSsoPayload`  
     -   `params.encodeSessionData`  
     -   `params.decodeSessionData`  
+    -   `params.debug`  
 
 ### loginFow
 
@@ -65,11 +68,11 @@ Login Flow, handling SSO and AppLink login from Blockpass client.
 
 **Parameters**
 
--   `params` **[Object][32]** 
+-   `params` **[Object][34]** 
     -   `params.code`  
     -   `params.sessionCode`  
 
-Returns **[Promise][33]&lt;[BlockpassMobileResponsePayload][34]>** 
+Returns **[Promise][35]&lt;[BlockpassMobileResponsePayload][36]>** 
 
 ### updateDataFlow
 
@@ -83,12 +86,12 @@ Handle user data upload and fill-up kycRecord
 
 **Parameters**
 
--   `params` **[RawDataUploadDataRequest][35]** 
+-   `params` **[RawDataUploadDataRequest][37]** 
     -   `params.accessToken`  
     -   `params.slugList`  
     -   `params.userRawData` **...any** 
 
-Returns **[Promise][33]&lt;[BlockpassMobileResponsePayload][34]>** 
+Returns **[Promise][35]&lt;[BlockpassMobileResponsePayload][36]>** 
 
 ### registerFlow
 
@@ -99,10 +102,10 @@ This behaves the same as loginFlow except for it does not require sessionCode in
 
 **Parameters**
 
--   `params` **[Object][32]** 
+-   `params` **[Object][34]** 
     -   `params.code`  
 
-Returns **[Promise][33]&lt;[BlockpassMobileResponsePayload][34]>** 
+Returns **[Promise][35]&lt;[BlockpassMobileResponsePayload][36]>** 
 
 ### queryStatusFlow
 
@@ -112,25 +115,36 @@ Query status of kyc record
 
 **Parameters**
 
--   `params` **[Object][32]** 
+-   `params` **[Object][34]** 
     -   `params.code`  
     -   `params.sessionCode`  
 
-Returns **[Promise][33]&lt;[MobileAppKycRecordStatus][36]>** 
+Returns **[Promise][35]&lt;[MobileAppKycRecordStatus][38]>** 
 
-### signCertificate
+### resubmitDataFlow
 
 * * *
+
+Resubmit data flow
+
+**Parameters**
+
+-   `params` **[Object][34]** 
+    -   `params.code`  
+    -   `params.fieldList`  
+    -   `params.certList`  
+
+### signCertificate
 
 Sign new Certificate and send to Blockpass
 
 **Parameters**
 
--   `params` **[Object][32]** 
-    -   `params.id`  
-    -   `params.kycRecord`  
+-   `$0` **any** 
+    -   `$0.id`  
+    -   `$0.kycRecord`  
 
-Returns **[Promise][33]&lt;[boolean][37]>** 
+Returns **[Promise][35]&lt;[boolean][39]>** 
 
 ### rejectCertificate
 
@@ -140,11 +154,11 @@ Reject a given Certificate
 
 **Parameters**
 
--   `params` **[Object][32]** 
+-   `params` **[Object][34]** 
     -   `params.profileId`  
     -   `params.message`  
 
-Returns **[Promise][33]&lt;[boolean][37]>** 
+Returns **[Promise][35]&lt;[boolean][39]>** 
 
 ### queryProofOfPath
 
@@ -154,7 +168,7 @@ Query Merkle proof for a given slugList
 
 **Parameters**
 
--   `params` **[Object][32]** 
+-   `params` **[Object][34]** 
     -   `params.kycToken`  
     -   `params.slugList`  
 
@@ -166,7 +180,7 @@ Send Notification to user
 
 **Parameters**
 
--   `params` **[Object][32]** 
+-   `params` **[Object][34]** 
     -   `params.message`  
     -   `params.title`  
     -   `params.bpToken`  
@@ -181,32 +195,33 @@ Check Merkle proof for invidual field
 
 **Parameters**
 
--   `rootHash` **[string][38]** 
--   `rawData` **([string][38] \| [Buffer][39])** 
+-   `rootHash` **[string][40]** 
+-   `rawData` **([string][40] \| [Buffer][41])** 
 -   `proofList` **any** 
 
 ## ConstructorParams
 
 * * *
 
-Type: [Object][32]
+Type: [Object][34]
 
 **Properties**
 
--   `baseUrl` **[string][38]** 
--   `clientId` **[string][38]** 
--   `secretId` **[string][38]** 
--   `requiredFields` **\[[string][38]]** 
--   `optionalFields` **\[[string][38]]** 
--   `certs` **\[[string][38]]** 
--   `findKycById` **[FindKycByIdHandler][40]** 
--   `createKyc` **[CreateKycHandler][41]** 
--   `updateKyc` **[UpdateKycHandler][42]** 
--   `queryKycStatus` **[QueryKycStatusHandler][43]** 
--   `needRecheckExistingKyc` **[ReCheckKycRecordHandler][44]?** 
--   `generateSsoPayload` **[GenerateSsoPayloadHandler][45]?** 
--   `encodeSessionData` **function (payload: any): [string][38]??** 
--   `decodeSessionData` **function (payload: [string][38]): any??** 
+-   `baseUrl` **[string][40]** 
+-   `clientId` **[string][40]** 
+-   `secretId` **[string][40]** 
+-   `requiredFields` **\[[string][40]]** 
+-   `optionalFields` **\[[string][40]]** 
+-   `certs` **\[[string][40]]** 
+-   `findKycById` **[FindKycByIdHandler][42]** 
+-   `createKyc` **[CreateKycHandler][43]** 
+-   `updateKyc` **[UpdateKycHandler][44]** 
+-   `queryKycStatus` **[QueryKycStatusHandler][45]** 
+-   `onResubmitKycData` **[ReSubmitCheckHandler][46]?** 
+-   `generateSsoPayload` **[GenerateSsoPayloadHandler][47]?** 
+-   `encodeSessionData` **function (payload: any): [string][40]??** 
+-   `decodeSessionData` **function (payload: [string][40]): any??** 
+-   `debug` **[boolean][39]** 
 
 ## KycRecord
 
@@ -214,7 +229,7 @@ Type: [Object][32]
 
 KYC Records
 
-Type: [object][32]
+Type: [object][34]
 
 ## RawDataUploadDataRequest
 
@@ -222,7 +237,7 @@ Type: [object][32]
 
 RawData upload from Mobile App
 
-Type: [Object][32]&lt;[string][38], ([RawDataString][46] \| [RawDataFile][47])>
+Type: [Object][34]&lt;[string][40], ([RawDataString][48] \| [RawDataFile][49])>
 
 **Examples**
 
@@ -245,24 +260,24 @@ Type: [Object][32]&lt;[string][38], ([RawDataString][46] \| [RawDataFile][47])>
 
 String fields from Mobile App
 
-Type: [Object][32]
+Type: [Object][34]
 
 **Properties**
 
 -   `type` **`"string"`** 
--   `value` **[string][38]** 
+-   `value` **[string][40]** 
 
 ## RawDataFile
 
 Binary fields from Mobile App
 
-Type: [Object][32]
+Type: [Object][34]
 
 **Properties**
 
 -   `type` **`"file"`** 
--   `buffer` **[Buffer][39]** 
--   `originalName` **[string][38]?** 
+-   `buffer` **[Buffer][41]** 
+-   `originalName` **[string][40]?** 
 
 ## MobileAppKycRecordStatus
 
@@ -270,15 +285,15 @@ Type: [Object][32]
 
 KYC Record Status
 
-Type: [object][32]
+Type: [object][34]
 
 **Properties**
 
--   `status` **[RecordStatus][48]** 
--   `message` **[string][38]?** 
--   `createdDate` **[Date][49]?** 
--   `identities` **\[[RecordFieldStatus][50]]?** 
--   `certificates` **\[[RecordFieldStatus][50]]?** 
+-   `status` **[RecordStatus][50]** 
+-   `message` **[string][40]?** 
+-   `createdDate` **[Date][51]?** 
+-   `identities` **\[[RecordFieldStatus][52]]?** 
+-   `certificates` **\[[RecordFieldStatus][52]]?** 
 
 ## RecordStatus
 
@@ -286,7 +301,7 @@ Type: [object][32]
 
 Currently KycRecord status: "notFound" | "waiting" | "inreview" | "approved"
 
-Type: [string][38]
+Type: [string][40]
 
 ## RecordFieldStatus
 
@@ -294,13 +309,13 @@ Type: [string][38]
 
 KYC Record 's Field Status
 
-Type: [object][32]
+Type: [object][34]
 
 **Properties**
 
--   `slug` **[string][38]** 
--   `status` **[InvidualFieldStatus][51]** 
--   `comment` **[string][38]** 
+-   `slug` **[string][40]** 
+-   `status` **[InvidualFieldStatus][53]** 
+-   `comment` **[string][40]** 
 
 ## InvidualFieldStatus
 
@@ -308,7 +323,7 @@ Type: [object][32]
 
 Status for invidual fields: "received" | "approved" | "rejected" | "missing";
 
-Type: [string][38]
+Type: [string][40]
 
 ## KycProfile
 
@@ -316,14 +331,14 @@ Type: [string][38]
 
 Blockpass Kyc Profile object
 
-Type: [object][32]
+Type: [object][34]
 
 **Properties**
 
--   `id` **[string][38]** 
--   `smartContractId` **[string][38]** 
--   `rootHash` **[string][38]** 
--   `isSynching` **[SyncStatus][52]** 
+-   `id` **[string][40]** 
+-   `smartContractId` **[string][40]** 
+-   `rootHash` **[string][40]** 
+-   `isSynching` **[SyncStatus][54]** 
 
 ## SyncStatus
 
@@ -331,7 +346,7 @@ Type: [object][32]
 
 Kyc Profile 's syncing status: "syncing" | "complete"
 
-Type: [string][38]
+Type: [string][40]
 
 ## KycToken
 
@@ -339,13 +354,13 @@ Type: [string][38]
 
 Blockpass KycToken object
 
-Type: [object][32]
+Type: [object][34]
 
 **Properties**
 
--   `access_token` **[string][38]** 
--   `expires_in` **[Number][53]** 
--   `refresh_token` **[string][38]** 
+-   `access_token` **[string][40]** 
+-   `expires_in` **[Number][55]** 
+-   `refresh_token` **[string][40]** 
 
 ## NextActionType
 
@@ -353,7 +368,7 @@ Type: [object][32]
 
 Client Next action: "none" | "upload"
 
-Type: [string][38]
+Type: [string][40]
 
 ## BlockpassMobileResponsePayload
 
@@ -361,15 +376,15 @@ Type: [string][38]
 
 Blockpass Mobile Response
 
-Type: [object][32]
+Type: [object][34]
 
 **Properties**
 
--   `nextAction` **[NextActionType][54]** 
--   `message` **[string][38]?** 
--   `accessToken` **[string][38]?** 
--   `requiredFields` **\[[string][38]]?** 
--   `optionalFields` **\[[string][38]]?** 
+-   `nextAction` **[NextActionType][56]** 
+-   `message` **[string][40]?** 
+-   `accessToken` **[string][40]?** 
+-   `requiredFields` **\[[string][40]]?** 
+-   `optionalFields` **\[[string][40]]?** 
 
 ## FindKycByIdHandler
 
@@ -377,13 +392,13 @@ Type: [object][32]
 
 Handler function to query Kyc record by Id
 
-Type: [Function][55]
+Type: [Function][57]
 
 **Parameters**
 
--   `kycId` **[string][38]** 
+-   `kycId` **[string][40]** 
 
-Returns **[Promise][33]&lt;[KycRecord][56]>** 
+Returns **[Promise][35]&lt;[KycRecord][58]>** 
 
 ## CreateKycHandler
 
@@ -391,14 +406,14 @@ Returns **[Promise][33]&lt;[KycRecord][56]>**
 
 Handler function to create new KycRecord
 
-Type: [Function][55]
+Type: [Function][57]
 
 **Parameters**
 
--   `params` **[Object][32]** 
-    -   `params.kycProfile` **[KycProfile][57]** 
+-   `params` **[Object][34]** 
+    -   `params.kycProfile` **[KycProfile][59]** 
 
-Returns **[Promise][33]&lt;[KycRecord][56]>** 
+Returns **[Promise][35]&lt;[KycRecord][58]>** 
 
 ## UpdateKycHandler
 
@@ -406,17 +421,17 @@ Returns **[Promise][33]&lt;[KycRecord][56]>**
 
 Handler function to update existing KycRecord
 
-Type: [Function][55]
+Type: [Function][57]
 
 **Parameters**
 
--   `params` **[Object][32]** 
-    -   `params.kycProfile` **[KycProfile][57]** 
-    -   `params.kycRecord` **[KycRecord][56]** 
-    -   `params.kycToken` **[KycToken][58]** 
-    -   `params.userRawData` **[Object][32]** 
+-   `params` **[Object][34]** 
+    -   `params.kycProfile` **[KycProfile][59]** 
+    -   `params.kycRecord` **[KycRecord][58]** 
+    -   `params.kycToken` **[KycToken][60]** 
+    -   `params.userRawData` **[Object][34]** 
 
-Returns **[Promise][33]&lt;[KycRecord][56]>** 
+Returns **[Promise][35]&lt;[KycRecord][58]>** 
 
 ## QueryKycStatusHandler
 
@@ -424,14 +439,14 @@ Returns **[Promise][33]&lt;[KycRecord][56]>**
 
 Handler function to summary status of KycRecord
 
-Type: [Function][55]
+Type: [Function][57]
 
 **Parameters**
 
--   `params` **[Object][32]** 
-    -   `params.kycRecord` **[KycRecord][56]** 
+-   `params` **[Object][34]** 
+    -   `params.kycRecord` **[KycRecord][58]** 
 
-Returns **[Promise][33]&lt;[MobileAppKycRecordStatus][36]>** 
+Returns **[Promise][35]&lt;[MobileAppKycRecordStatus][38]>** 
 
 ## ReCheckKycRecordHandler
 
@@ -439,17 +454,35 @@ Returns **[Promise][33]&lt;[MobileAppKycRecordStatus][36]>**
 
 Handler function return whether a KYC existing check is required
 
-Type: [Function][55]
+Type: [Function][57]
 
 **Parameters**
 
--   `params` **[Object][32]** 
-    -   `params.kycProfile` **[KycProfile][57]** 
-    -   `params.kycRecord` **[KycRecord][56]** 
-    -   `params.kycToken` **[KycToken][58]** 
-    -   `params.payload` **[Object][32]** 
+-   `params` **[Object][34]** 
+    -   `params.kycProfile` **[KycProfile][59]** 
+    -   `params.kycRecord` **[KycRecord][58]** 
+    -   `params.kycToken` **[KycToken][60]** 
+    -   `params.payload` **[Object][34]** 
 
-Returns **[Promise][33]&lt;[Object][32]>** 
+Returns **[Promise][35]&lt;[BlockpassMobileResponsePayload][36]>** 
+
+## ReSubmitCheckHandler
+
+* * *
+
+Handler function processing user resubmit request
+
+Type: [Function][57]
+
+**Parameters**
+
+-   `params` **[Object][34]** 
+    -   `params.kycProfile` **[KycProfile][59]** 
+    -   `params.kycRecord` **[KycRecord][58]** 
+    -   `params.kycToken` **[KycToken][60]** 
+    -   `params.payload` **[Object][34]** 
+
+Returns **[Promise][35]&lt;[BlockpassMobileResponsePayload][36]>** 
 
 ## GenerateSsoPayloadHandler
 
@@ -457,15 +490,15 @@ Returns **[Promise][33]&lt;[Object][32]>**
 
 Handler function to generate SSo payload
 
-Type: [Function][55]
+Type: [Function][57]
 
 **Parameters**
 
--   `params` **[Object][32]** 
-    -   `params.kycProfile` **[KycProfile][57]** 
-    -   `params.kycRecord` **[KycRecord][56]** 
-    -   `params.kycToken` **[KycToken][58]** 
-    -   `params.payload` **[Object][32]** 
+-   `params` **[Object][34]** 
+    -   `params.kycProfile` **[KycProfile][59]** 
+    -   `params.kycRecord` **[KycRecord][58]** 
+    -   `params.kycToken` **[KycToken][60]** 
+    -   `params.payload` **[Object][34]** 
 
 [1]: #serversdk
 
@@ -477,108 +510,112 @@ Type: [Function][55]
 
 [5]: #querystatusflow
 
-[6]: #signcertificate
+[6]: #resubmitdataflow
 
-[7]: #rejectcertificate
+[7]: #signcertificate
 
-[8]: #queryproofofpath
+[8]: #rejectcertificate
 
-[9]: #usernotify
+[9]: #queryproofofpath
 
-[10]: #merkleproofchecksingle
+[10]: #usernotify
 
-[11]: #constructorparams
+[11]: #merkleproofchecksingle
 
-[12]: #kycrecord
+[12]: #constructorparams
 
-[13]: #rawdatauploaddatarequest
+[13]: #kycrecord
 
-[14]: #rawdatastring
+[14]: #rawdatauploaddatarequest
 
-[15]: #rawdatafile
+[15]: #rawdatastring
 
-[16]: #mobileappkycrecordstatus
+[16]: #rawdatafile
 
-[17]: #recordstatus
+[17]: #mobileappkycrecordstatus
 
-[18]: #recordfieldstatus
+[18]: #recordstatus
 
-[19]: #invidualfieldstatus
+[19]: #recordfieldstatus
 
-[20]: #kycprofile
+[20]: #invidualfieldstatus
 
-[21]: #syncstatus
+[21]: #kycprofile
 
-[22]: #kyctoken
+[22]: #syncstatus
 
-[23]: #nextactiontype
+[23]: #kyctoken
 
-[24]: #blockpassmobileresponsepayload
+[24]: #nextactiontype
 
-[25]: #findkycbyidhandler
+[25]: #blockpassmobileresponsepayload
 
-[26]: #createkychandler
+[26]: #findkycbyidhandler
 
-[27]: #updatekychandler
+[27]: #createkychandler
 
-[28]: #querykycstatushandler
+[28]: #updatekychandler
 
-[29]: #recheckkycrecordhandler
+[29]: #querykycstatushandler
 
-[30]: #generatessopayloadhandler
+[30]: #recheckkycrecordhandler
 
-[31]: #constructorparams
+[31]: #resubmitcheckhandler
 
-[32]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object
+[32]: #generatessopayloadhandler
 
-[33]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise
+[33]: #constructorparams
 
-[34]: #blockpassmobileresponsepayload
+[34]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object
 
-[35]: #rawdatauploaddatarequest
+[35]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise
 
-[36]: #mobileappkycrecordstatus
+[36]: #blockpassmobileresponsepayload
 
-[37]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean
+[37]: #rawdatauploaddatarequest
 
-[38]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String
+[38]: #mobileappkycrecordstatus
 
-[39]: https://nodejs.org/api/buffer.html
+[39]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean
 
-[40]: #findkycbyidhandler
+[40]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String
 
-[41]: #createkychandler
+[41]: https://nodejs.org/api/buffer.html
 
-[42]: #updatekychandler
+[42]: #findkycbyidhandler
 
-[43]: #querykycstatushandler
+[43]: #createkychandler
 
-[44]: #recheckkycrecordhandler
+[44]: #updatekychandler
 
-[45]: #generatessopayloadhandler
+[45]: #querykycstatushandler
 
-[46]: #rawdatastring
+[46]: #resubmitcheckhandler
 
-[47]: #rawdatafile
+[47]: #generatessopayloadhandler
 
-[48]: #recordstatus
+[48]: #rawdatastring
 
-[49]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date
+[49]: #rawdatafile
 
-[50]: #recordfieldstatus
+[50]: #recordstatus
 
-[51]: #invidualfieldstatus
+[51]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date
 
-[52]: #syncstatus
+[52]: #recordfieldstatus
 
-[53]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number
+[53]: #invidualfieldstatus
 
-[54]: #nextactiontype
+[54]: #syncstatus
 
-[55]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function
+[55]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number
 
-[56]: #kycrecord
+[56]: #nextactiontype
 
-[57]: #kycprofile
+[57]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function
 
-[58]: #kyctoken
+[58]: #kycrecord
+
+[59]: #kycprofile
+
+[60]: #kyctoken

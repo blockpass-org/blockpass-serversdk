@@ -11,7 +11,7 @@ module.exports.checkPending = function () {
         throw new Error('Pending Mock Http ' + pendings)
 }
 
-module.exports.mockHandShake = function (baseUrl, code, response = null) {
+module.exports.mockHandShake = function (baseUrl, code, response = null, numCall = 1) {
     response = response || {
         access_token: 'fake',
         token_type: 'fake',
@@ -21,9 +21,9 @@ module.exports.mockHandShake = function (baseUrl, code, response = null) {
     }
     nock(baseUrl)
         .post(api.HAND_SHAKE_PATH, (body) => {
-            console.log(body, code)
             return body.code === code
         })
+        .times(numCall)
         .reply(200, response)
 }
 

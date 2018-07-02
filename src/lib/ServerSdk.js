@@ -11,7 +11,7 @@ class ServerSdk {
   createKyc: CreateKycHandler;
   updateKyc: UpdateKycHandler;
   queryKycStatus: QueryKycStatusHandler;
-  needRecheckExistingKyc: ?ReCheckKycRecordHandler;
+  onResubmitKycData: ?ReSubmitCheckHandler;
   generateSsoPayload: ?GenerateSsoPayloadHandler;
   blockPassProvider: any;
   requiredFields: [string];
@@ -20,7 +20,8 @@ class ServerSdk {
   secretId: string;
   clientId: string;
   encodeSessionData: ?(payload: any) => string;
-  decodeSessionData: ?(token: string) => ?Object;
+  decodeSessionData: ?(token: string) =>?Object;
+  debug: boolean;
 
   /**
    *
@@ -37,10 +38,11 @@ class ServerSdk {
     createKyc,
     updateKyc,
     queryKycStatus,
-    needRecheckExistingKyc,
+    onResubmitKycData,
     generateSsoPayload,
     encodeSessionData,
-    decodeSessionData
+    decodeSessionData,
+    debug
   }: ConstructorParams) {
     if (clientId == null || secretId == null)
       throw new Error("Missing clientId or secretId");
@@ -74,7 +76,7 @@ class ServerSdk {
     this.updateKyc = updateKyc;
     this.queryKycStatus = queryKycStatus;
 
-    this.needRecheckExistingKyc = needRecheckExistingKyc;
+    this.onResubmitKycData = onResubmitKycData;
     this.generateSsoPayload = generateSsoPayload;
     this.encodeSessionData = encodeSessionData;
     this.decodeSessionData = decodeSessionData;
@@ -89,6 +91,7 @@ class ServerSdk {
     this.requiredFields = requiredFields;
     this.optionalFields = optionalFields;
     this.certs = certs;
+    this.debug = debug;
   }
 
   /**
@@ -105,9 +108,9 @@ class ServerSdk {
     code,
     sessionCode
   }: {
-    code: string,
-    sessionCode: string
-  }): Promise<BlockpassMobileResponsePayload> {
+      code: string,
+      sessionCode: string
+    }): Promise<BlockpassMobileResponsePayload> {
     if (code == null || sessionCode == null)
       throw new Error("Missing code or sessionCode");
 
@@ -126,56 +129,24 @@ class ServerSdk {
 
     let kycRecord = await Promise.resolve(this.findKycById(kycProfile.id));
     const isNewUser = kycRecord == null;
-    if (isNewUser)
-      kycRecord = await Promise.resolve(this.createKyc({ kycProfile }));
+    if (!isNewUser)
+      throw new Error("User has already registered");
+
+    kycRecord = await Promise.resolve(this.createKyc({ kycProfile }));
 
     let payload = {};
-    if (isNewUser) {
-      payload.nextAction = "upload";
-      payload.requiredFields = this.requiredFields;
-      payload.optionalFields = this.optionalFields;
-      payload.certs = this.certs;
-    } else {
-      payload.message = "welcome back";
-      payload.nextAction = "none";
-    }
+    payload.nextAction = "upload";
+    payload.requiredFields = this.requiredFields;
+    payload.optionalFields = this.optionalFields;
+    payload.certs = this.certs;
 
-    if (kycRecord && this.needRecheckExistingKyc) {
-      payload = await Promise.resolve(
-        this.needRecheckExistingKyc({
-          kycProfile,
-          kycRecord,
-          kycToken,
-          payload
-        })
-      );
-    }
-
-    // Nothing need to update. Notify sso complete
-    if (payload.nextAction === "none") {
-      const ssoData = await Promise.resolve(
-        this.generateSsoPayload
-          ? this.generateSsoPayload({
-              kycProfile,
-              kycRecord,
-              kycToken,
-              payload
-            })
-          : {}
-      );
-      const res = await this.blockPassProvider.notifyLoginComplete(
-        kycToken,
-        sessionCode,
-        ssoData
-      );
-      this._activityLog("[BlockPass] login success", res);
-    }
-
+    // Request upload data
     return {
       accessToken: this._encodeDataIntoToken({
         kycId: kycProfile.id,
         kycToken,
-        sessionCode
+        sessionCode,
+        redirectForm: 'login'
       }),
       ...payload
     };
@@ -194,15 +165,15 @@ class ServerSdk {
     slugList,
     ...userRawData
   }: {
-    accessToken: string,
-    slugList: [string],
-    userRawData: Object
-  }): Promise<BlockpassMobileResponsePayload> {
+      accessToken: string,
+      slugList: [string],
+      userRawData: Object
+    }): Promise<BlockpassMobileResponsePayload> {
     if (!slugList) throw new Error("Missing slugList");
 
     const decodeData = this._decodeDataFromToken(accessToken);
     if (!decodeData) throw new Error("Invalid Access Token");
-    const { kycId, kycToken, sessionCode } = decodeData;
+    const { kycId, kycToken, sessionCode, ...uploadSessionData } = decodeData;
 
     let kycRecord = await Promise.resolve(this.findKycById(kycId));
     if (!kycRecord) throw new Error("Kyc record could not found");
@@ -217,7 +188,8 @@ class ServerSdk {
         kycRecord,
         kycProfile,
         kycToken,
-        userRawData
+        userRawData,
+        uploadSessionData
       })
     );
 
@@ -231,11 +203,11 @@ class ServerSdk {
       const ssoData = await Promise.resolve(
         this.generateSsoPayload
           ? this.generateSsoPayload({
-              kycProfile,
-              kycRecord,
-              kycToken,
-              payload
-            })
+            kycProfile,
+            kycRecord,
+            kycToken,
+            payload
+          })
           : {}
       );
       const res = await this.blockPassProvider.notifyLoginComplete(
@@ -260,8 +232,8 @@ class ServerSdk {
   async registerFlow({
     code
   }: {
-    code: string
-  }): Promise<BlockpassMobileResponsePayload> {
+      code: string
+    }): Promise<BlockpassMobileResponsePayload> {
     if (code == null) throw new Error("Missing code or sessionCode");
 
     const kycToken = await this.blockPassProvider.doHandShake(code);
@@ -276,35 +248,22 @@ class ServerSdk {
 
     let kycRecord = await Promise.resolve(this.findKycById(kycProfile.id));
     const isNewUser = kycRecord == null;
-    if (isNewUser)
-      kycRecord = await Promise.resolve(this.createKyc({ kycProfile }));
+    if (!isNewUser)
+      throw new Error("User has already registered");
+
+    kycRecord = await Promise.resolve(this.createKyc({ kycProfile }));
 
     let payload = {};
-    if (isNewUser) {
-      payload.nextAction = "upload";
-      payload.requiredFields = this.requiredFields;
-      payload.optionalFields = this.optionalFields;
-      payload.certs = this.certs;
-    } else {
-      payload.message = "welcome back";
-      payload.nextAction = "none";
-    }
-
-    if (kycRecord && this.needRecheckExistingKyc) {
-      payload = await Promise.resolve(
-        this.needRecheckExistingKyc({
-          kycProfile,
-          kycRecord,
-          kycToken,
-          payload
-        })
-      );
-    }
+    payload.nextAction = "upload";
+    payload.requiredFields = this.requiredFields;
+    payload.optionalFields = this.optionalFields;
+    payload.certs = this.certs;
 
     return {
       accessToken: this._encodeDataIntoToken({
         kycId: kycProfile.id,
-        kycToken
+        kycToken,
+        redirectForm: 'register'
       }),
       ...payload
     };
@@ -319,9 +278,9 @@ class ServerSdk {
     code,
     sessionCode
   }: {
-    code: string,
-    sessionCode: ?string
-  }): Promise<MobileAppKycRecordStatus> {
+      code: string,
+      sessionCode: ?string
+    }): Promise<MobileAppKycRecordStatus> {
     if (code == null) throw new Error("Missing code or sessionCode");
 
     let handShakePayload = [code]
@@ -385,16 +344,93 @@ class ServerSdk {
 
   /**
    * -----------------------------------------------------------------------------------
-   * Sign new Certificate and send to Blockpass
+   * Resubmit data flow
    * @param {Object} params
+   */
+  async resubmitDataFlow({
+    code,
+    fieldList,
+    certList
+  }: {
+      code: string,
+      fieldList: [string],
+      certList: [string]
+    }
+  ) {
+
+    if (code == null) throw new Error("Missing code");
+    if (!fieldList || !certList) throw new Error("Missing fieldList or certList");
+
+    const fieldCheck = fieldList.every(itm => this.requiredFields.indexOf(itm) !== -1)
+    const cerCheck = certList.every(itm => this.certs.indexOf(itm) !== -1)
+    if (!fieldCheck || !cerCheck) throw new Error("Invalid fieldList or certList name")
+
+    let handShakePayload = [code]
+
+    const kycToken = await this.blockPassProvider.doHandShake(...handShakePayload);
+    if (kycToken == null) throw new Error("Handshake failed");
+
+    this._activityLog("[BlockPass]", kycToken);
+
+    const kycProfile = await this.blockPassProvider.doMatchingData(kycToken);
+    if (kycProfile == null) throw new Error("Sync info failed");
+
+    this._activityLog("[BlockPass]", kycProfile);
+
+    let kycRecord = await Promise.resolve(this.findKycById(kycProfile.id));
+
+    if (!kycRecord)
+      throw new Error("[BlockPass][resubmitDataFlow] kycRecord not found")
+
+    let payload = {
+      nextAction: 'upload',
+      requiredFields: fieldList,
+      certs: certList
+    };
+
+    if (this.onResubmitKycData) {
+      payload = await Promise.resolve(
+        this.onResubmitKycData({
+          kycProfile,
+          kycRecord,
+          kycToken,
+          payload,
+          fieldList,
+          certList
+        })
+      );
+    }
+
+    let accessToken = null
+    if (payload.nextAction === 'upload')
+      accessToken = this._encodeDataIntoToken({
+        kycId: kycProfile.id,
+        kycToken,
+        redirectForm: 'reSubmit',
+        reSubmitInfo: {
+          fieldList,
+          certList
+        }
+      })
+
+    return {
+      accessToken,
+      ...payload
+    };
+  }
+
+  //-----------------------------------------------------------------------------------
+  /**
+   * Sign new Certificate and send to Blockpass
+   * 
    */
   async signCertificate({
     id,
     kycRecord
   }: {
-    id: string,
-    kycRecord: KycRecord
-  }): Promise<boolean> {
+      id: string,
+      kycRecord: KycRecord
+    }): Promise<boolean> {
     // Todo: Implement in V2
     return false;
   }
@@ -408,9 +444,9 @@ class ServerSdk {
     profileId,
     message
   }: {
-    profileId: string,
-    message: string
-  }): Promise<boolean> {
+      profileId: string,
+      message: string
+    }): Promise<boolean> {
     // Todo: Implement in V2
     return false;
   }
@@ -424,9 +460,9 @@ class ServerSdk {
     kycToken,
     slugList
   }: {
-    kycToken: KycToken,
-    slugList: [string]
-  }) {
+      kycToken: KycToken,
+      slugList: [string]
+    }) {
     const res = await this.blockPassProvider.queryProofOfPath(
       kycToken,
       slugList
@@ -443,11 +479,11 @@ class ServerSdk {
     message,
     title,
     bpToken
-  } : {
-    message: string,
-    title: string,
-    bpToken: KycToken
-  }) : any {
+  }: {
+      message: string,
+      title: string,
+      bpToken: KycToken
+    }): any {
 
     const res = await this.blockPassProvider.notifyUser(
       bpToken,
@@ -459,7 +495,8 @@ class ServerSdk {
 
   //-----------------------------------------------------------------------------------
   _activityLog(...args: any) {
-    console.log("\x1b[32m%s\x1b[0m", "[info]", ...args);
+    if (this.debug)
+      console.log("\x1b[32m%s\x1b[0m", "[info]", ...args);
   }
 
   _encodeDataIntoToken(payload: any): string {
@@ -480,7 +517,7 @@ class ServerSdk {
     }
   }
 
-  _serviceRequirement() : any {
+  _serviceRequirement(): any {
     const { requiredFields, certs, optionalFields } = this
 
     const identities = requiredFields.map(itm => {
@@ -530,10 +567,11 @@ type ConstructorParams = {
   createKyc: CreateKycHandler,
   updateKyc: UpdateKycHandler,
   queryKycStatus: QueryKycStatusHandler,
-  needRecheckExistingKyc?: ReCheckKycRecordHandler,
+  onResubmitKycData: ?ReSubmitCheckHandler,
   generateSsoPayload?: GenerateSsoPayloadHandler,
   encodeSessionData?: ?(payload: any) => string,
-  decodeSessionData?: ?(payload: string) => any
+  decodeSessionData?: ?(payload: string) => any,
+  debug: boolean
 };
 
 /**
@@ -732,14 +770,34 @@ type QueryKycStatusHandler = ({
  * @param {KycRecord} params.kycRecord
  * @param {KycToken} params.kycToken
  * @param {Object} params.payload
- * @returns {Promise<Object>}
+ * @returns {Promise<BlockpassMobileResponsePayload>}
  */
 type ReCheckKycRecordHandler = ({
   kycProfile: KycProfile,
   kycRecord: KycRecord,
   kycToken: KycToken,
-  payload: Object
-}) => Promise<Object>;
+  payload: BlockpassMobileResponsePayload
+}) => Promise<BlockpassMobileResponsePayload>;
+
+
+/**
+ * --------------------------------------------------------
+ * Handler function processing user resubmit request
+ * @callback
+ * @param {Object} params
+ * @param {KycProfile} params.kycProfile
+ * @param {KycRecord} params.kycRecord
+ * @param {KycToken} params.kycToken
+ * @param {Object} params.payload
+ * @returns {Promise<BlockpassMobileResponsePayload>}
+ */
+type ReSubmitCheckHandler = ({
+  kycProfile: KycProfile,
+  kycRecord: KycRecord,
+  kycToken: KycToken,
+  payload: BlockpassMobileResponsePayload
+}) => Promise<BlockpassMobileResponsePayload>;
+
 
 /**
  * --------------------------------------------------------
