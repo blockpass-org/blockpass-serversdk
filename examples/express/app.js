@@ -31,7 +31,6 @@ const serverSdk = new ServerSDK({
     createKyc: createKyc,
     updateKyc: updateKyc,
     queryKycStatus: queryKycStatus,
-    needRecheckExistingKyc: needRecheckExistingKyc,
     generateSsoPayload: generateSsoPayload
 
 })
@@ -52,6 +51,25 @@ async function createKyc({ kycProfile }) {
         isSynching
     })
 
+    newIns.certs = config.OPTIONAL_CERTS.reduce((acc, key) => {
+        acc[key] = {
+            slug: key,
+            status: 'missing'
+        }
+        return acc;
+    }, {})
+
+
+    newIns.identities = config.REQUIRED_FIELDS.reduce((acc, key) => {
+        acc[key] = {
+            slug: key,
+            status: 'missing'
+        }
+        return acc;
+    }, {})
+    
+    
+
     return await newIns.save()
 }
 
@@ -62,12 +80,6 @@ async function updateKyc({
     userRawData
 }) {
     const { id, smartContractId, rootHash, isSynching } = kycProfile;
-
-    if (!kycRecord.identities)
-        kycRecord.identities = {}
-
-    if (!kycRecord.certs)
-        kycRecord.certs = {}
 
     const jobs = Object.keys(userRawData).map(async (key) => {
         const metaData = userRawData[key];
@@ -98,7 +110,7 @@ async function updateKyc({
             fileBuffer: buffer
         })
 
-        return kycRecord[key] = {
+        return kycRecord.identities[key] = {
             slug: key,
             value: fileHandler._id,
             isFile: true,
@@ -124,11 +136,6 @@ async function updateKyc({
     return await kycRecord.save()
 }
 
-async function needRecheckExistingKyc({ kycProfile, kycRecord, payload }) {
-
-    return payload;
-}
-
 async function generateSsoPayload({ kycProfile, kycRecord, kycToken, payload }) {
     return {
         _id: kycRecord._id,
@@ -137,7 +144,6 @@ async function generateSsoPayload({ kycProfile, kycRecord, kycToken, payload }) 
 
 async function queryKycStatus({ kycRecord }) {
     const { status, identities, certs } = kycRecord
-
 
     // status meaning:  
     //  - "received": data recieved by service and under review
@@ -170,7 +176,8 @@ async function queryKycStatus({ kycRecord }) {
         message: 'This process usually take 2 working days',
         createdDate: new Date(),
         identities: identities_status,
-        certificates: certs_status
+        certificates: certs_status,
+        allowResubmit: true
     }
 }
 
@@ -263,6 +270,22 @@ router.post('/blockpass/api/register', async (req, res) => {
         const { code } = req.body;
 
         const payload = await serverSdk.registerFlow({ code })
+        return res.json(payload)
+    } catch (ex) {
+        console.error(ex)
+        return res.status(500).json({
+            err: 500,
+            msg: ex.message,
+        })
+    }
+})
+
+//-------------------------------------------------------------------------
+router.post('/blockpass/api/resubmit', async (req, res) => {
+    try {
+        const { code, fieldList, certList } = req.body
+
+        const payload = await serverSdk.resubmitDataFlow({ code, fieldList, certList })
         return res.json(payload)
     } catch (ex) {
         console.error(ex)
