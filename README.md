@@ -1,5 +1,8 @@
 # Blockpass Server SDK
 
+## Working Flow:
+![flow](doc/mobile-app-endpoints.png)
+
 ## Terms:
 
 -   **Endpoints**:
@@ -7,7 +10,8 @@
     -   `/status`: Kyc status endpoints. Called by mobile app. Response **KycRecordStatus**
     -   `/login`: SSO endpoints. Called by mobile app. Triggered by scanning qr code or opening Applink
     -   `/register`: Registration or re-new certificate request (later). Triggred by pressing **Register** button on mobile application
-    -   `/upload`: Upload user rawData. Triggered when mobile application receives **nextAction=upload** returned by `/login` or `/register`
+    -   `/resubmit`: Update data for existing KYC record
+    -   `/upload`: Upload user rawData. Triggered when mobile application receives **nextAction=upload** returned by `/login`, `/register` or `/resubmit`
 
 -   **KycProfile**: User profile object return by Blockpass Api
 -   **KycToken**: Access token object. Use to exchange data between Services and Blockpass API (each user will have different token)
@@ -49,6 +53,7 @@ Example:
     status: 'notFound|waiting|inreview|approved',
     message: 'summary current status',
     createdDate: 'DateTime KycRecord created',
+    allowResubmit: true|false
     identities: [
         {
             slug: 'slug name',
@@ -68,11 +73,6 @@ Example:
 }
 ```
 
-
-## Working Flow:
-
-<img src="./doc/flow.svg" width="600" />
-
 ## Getting Started
 
 -   **Step 1**: Declare logic handler
@@ -81,8 +81,7 @@ Example:
     2.  `createKyc`: Create new kycRecord
     3.  `updateKyc`: Update kycRecord
     4.  `queryKycStatus`: Query KycRecord status
-    5.  `needRecheckExistingKyc`: Perform logic to request client to re-submit data
-    6.  `generateSsoPayload`: Generate SSo payload (this custom data will be sent to web-client)
+    5.  `generateSsoPayload`: Generate SSo payload (this custom data will be sent to web-client)
 
 ```javascript
 const sdk = new ServerSdk({
@@ -100,7 +99,6 @@ const sdk = new ServerSdk({
     createKyc: createKyc,
     updateKyc: updateKyc,
     queryKycStatus: queryKycStatus,
-    needRecheckExistingKyc: needRecheckExistingKyc,
     generateSsoPayload: generateSsoPayload
 })
 
@@ -194,29 +192,6 @@ async function queryKycStatus({ kycRecord }) {
 }
 
 //-------------------------------------------------------------------------
-// Perform checking on existing kycRecord => generate nextAction for BlockpassClient
-//-------------------------------------------------------------------------
-async function needRecheckExistingKyc({ kycProfile, kycRecord, payload }) {
-
-    // Check kycRecord missing critical fields ( caused by previous upload error / server crash )
-    const missingFields = kycRecord.missingCriticalFields()
-    if(missingFields) {
-        return {
-            nextAction: 'upload',
-            requiredFields: missingFields
-        }
-    }
-
-    // Further checking logic
-
-    // no need re-upload anything. update review status to user
-    return {
-        nextAction: 'none',
-        message: 'user readable review-status'
-    };
-}
-
-//-------------------------------------------------------------------------
 // Kyc successfull. Generate services token for client
 //-------------------------------------------------------------------------
 async function generateSsoPayload({ kycProfile, kycRecord, kycToken, payload }) {
@@ -232,6 +207,7 @@ async function generateSsoPayload({ kycProfile, kycRecord, kycToken, payload }) 
     2.  /upload -> sdk.updateDataFlow(...)
     3.  /register -> sdk.registerFlow(...)
     4.  /status -> sdk.queryStatusFlow(...)
+    5.  /status -> sdk.resubmitDataFlow(...)
 
 
     Ps: See express `examples`
@@ -266,7 +242,7 @@ $ npm run docs # generate docs
 $ npm run build # generate docs and transpile code
 ```
 
-## API
+## API Documents
 
 [Documents](./doc/api.md)
 
