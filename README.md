@@ -9,11 +9,11 @@
 
     -   `/status`: Kyc status endpoints. Called by mobile app. Response **KycRecordStatus**
     -   `/login`: SSO endpoints. Called by mobile app. Triggered by scanning qr code or opening Applink
-    -   `/register`: Registration or re-new certificate request (later). Triggred by pressing **Register** button on mobile application
+    -   `/register`: Registration or re-new certificate request (later). Triggered by pressing **Register** button on mobile application
     -   `/resubmit`: Update data for existing KYC record
     -   `/upload`: Upload user rawData. Triggered when mobile application receives **nextAction=upload** returned by `/login`, `/register` or `/resubmit`
 
--   **KycProfile**: User profile object return by Blockpass Api
+-   **KycProfile**: User profile object returned by Blockpass Api
 -   **KycToken**: Access token object. Use to exchange data between Services and Blockpass API (each user will have different token)
 -   **KycRecord**: Object stored kyc data, managed by Services. It usually contains 3 parts(BlockpassKycProfile + RawData + Service Extra Info)
 
@@ -160,8 +160,8 @@ async function updateKyc({
 
     const waitingJob = await Promise.all(jobs);
 
-    // [Advance] - Link kyc record with existing user data in your database
-    // Example: This email|phone contain in our database
+    // [Advanced] - Link kyc record with existing user data in your database
+    // Example: This email|phone contained in our database
 
      // calculate token expired date from 'expires_in'
     const expiredDate = new Date(Date.now() + kycToken.expires_in * 1000)
