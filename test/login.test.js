@@ -19,10 +19,11 @@ async function findKycById (kycId) {
 }
 
 // -------------------------------------------------------------------------
-async function createKyc ({ kycProfile }) {
+async function createKyc ({ kycProfile, refId }) {
   const { id, smartContractId, rootHash, isSynching } = kycProfile
   const newIns = new KYCModel({
     blockPassID: id,
+    refId,
     rootHash,
     smartContractId,
     isSynching
@@ -120,7 +121,7 @@ describe('login', () => {
     KYCModel.reset()
   })
 
-  it('login[missing params', async () => {
+  test('login[missing params', async () => {
     const bpFakeUserId = Date.now().toString()
 
     const ins = createIns()
@@ -132,7 +133,7 @@ describe('login', () => {
     blockpassApiMock.clearAll()
   })
 
-  it('login[new record] wrong sessionToken', async () => {
+  test('login[new record] wrong sessionToken', async () => {
     const bpFakeUserId = Date.now().toString()
     const sessionCode = '1xxx'
 
@@ -164,9 +165,10 @@ describe('login', () => {
     blockpassApiMock.clearAll()
   })
 
-  it('login[new record]', async () => {
+  test('login[new record]', async () => {
     const bpFakeUserId = Date.now().toString()
     const sessionCode = '1xxx'
+    const refId = 'i-am-ref-id' + Date.now().toString()
 
     // Mock API
     blockpassApiMock.mockHandShake(FAKE_BASEURL, bpFakeUserId)
@@ -175,7 +177,7 @@ describe('login', () => {
 
     const ins = createIns()
 
-    const step1 = await ins.loginFow({ code: bpFakeUserId, sessionCode })
+    const step1 = await ins.loginFow({ code: bpFakeUserId, sessionCode, refId })
     expect(step1.nextAction).toEqual('upload')
     expect(step1.requiredFields).toEqual(REQUIRED_FIELDS)
 
@@ -193,11 +195,17 @@ describe('login', () => {
 
     expect(step2.nextAction).toEqual('none')
 
+    // check refId
+    const model = await KYCModel.findOne({
+      blockPassID: bpFakeUserId
+    })
+    expect(model.refId).toEqual(refId)
+
     blockpassApiMock.checkPending()
     blockpassApiMock.clearAll()
   })
 
-  it('login[existing record] - error', async () => {
+  test('login[existing record] - error', async () => {
     const bpFakeUserId = '1522257024962'
     const sessionCode = '1xxx'
 
@@ -217,7 +225,7 @@ describe('login', () => {
     blockpassApiMock.clearAll()
   })
 
-  it('login[existing record not full-fill] resubmit missing data', async () => {
+  test('login[existing record not full-fill] resubmit missing data', async () => {
     const bpFakeUserId = '1522257024960'
     const sessionCode = '1xxx'
 

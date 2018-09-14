@@ -10,6 +10,34 @@ const REQUIRED_FIELDS = ['phone']
 const OPTIONAL_FIELDS = []
 const OPTIONAL_CERTS = ['onfido']
 
+const PROOF_LIST = {
+  phone: [
+    {
+      parent:
+        '8fe3d939a77cf7431f81f5c90293444e96b30417fab43d67674566af0f0d302b',
+      left: 'cd5ea2c19e4e01ac28345749bc48882c299e2dbb2398b23e82531583f22fe59f',
+      right: '1fb9acd13760f238e64ea7bc87b776799c55a4a0b94bb68a7fc9be4930b1b1af'
+    },
+    {
+      parent:
+        '672276ede571a3e4b461b53057b766b287c3d0e05bb003222c84a9a96bd72651',
+      left: '8fe3d939a77cf7431f81f5c90293444e96b30417fab43d67674566af0f0d302b',
+      right: '5b43a0086ddc5aca1aae722ac5a8a328b8539af5e83ce7232802f075d718a696'
+    },
+    {
+      parent:
+        '05d72fa347994a3ae0228d898ee55054975b2dfd7a6a30592e8ee06c0cfde1ac',
+      left: '6dbdc13d7bc9d2776211398e7059f2bd1870083a2a29448456a30adcc1c4ce00',
+      right: '672276ede571a3e4b461b53057b766b287c3d0e05bb003222c84a9a96bd72651'
+    },
+    {
+      parent:
+        '01edf3645eef35d41b315523b5f62849f3ca0dbc07b3562d9245d9c7ce88a2bb',
+      left: '05d72fa347994a3ae0228d898ee55054975b2dfd7a6a30592e8ee06c0cfde1ac',
+      right: 'a28adb8671b32df77db8150fbfc5eb4ee98007abf2e2169e48f64ba06a9322d5'
+    }
+  ]
+}
 // -------------------------------------------------------------------------
 //  Logic Handler
 // -------------------------------------------------------------------------
@@ -122,59 +150,65 @@ function createIns ({ find, create, update, reCheck, query, ssoPayload } = {}) {
   })
 }
 
-describe('login', () => {
+describe('validate', () => {
   beforeEach(() => {
     KYCModel.reset()
   })
 
-  test('[not-found] query-kyc', async () => {
-    const bpFakeUserId = Date.now().toString()
+  test('validate proof of path', async () => {
+    const kycId = '5addc3a70476a51e3c3f4290'
 
-    // Mock API
-    blockpassApiMock.mockHandShake(FAKE_BASEURL, bpFakeUserId)
-    blockpassApiMock.mockMatchingData(FAKE_BASEURL, bpFakeUserId, null, 1)
+    blockpassApiMock.mockQueryProofOfPath(FAKE_BASEURL, {
+      status: 'success',
+      proofList: PROOF_LIST
+    })
 
     const ins = createIns()
 
-    const step1 = await ins.queryStatusFlow({ code: bpFakeUserId })
+    const kycRecord = await KYCModel.findById(kycId)
 
-    expect(step1.status).toEqual('notFound')
+    // Query proof path
+    const step1 = await ins.queryProofOfPath({
+      kycToken: kycRecord.bpToken,
+      slugList: ['phone']
+    })
+    const { proofOfPath } = step1
+
+    // Check-again with root hash
+    const validateRes = ins.merkleProofCheckSingle(
+      kycRecord.rootHash,
+      kycRecord.phone,
+      proofOfPath.proofList['phone']
+    )
+
+    expect(validateRes).toEqual(true)
 
     blockpassApiMock.checkPending()
     blockpassApiMock.clearAll()
   })
 
-  test('[found] query-kyc', async () => {
-    const bpFakeUserId = '5ad862240a176722f25fede3'
+  test('validate proof of path and accessToken refresh', async () => {
+    const kycId = '5ad967142219d02223ae44b3'
 
-    // Mock API
-    blockpassApiMock.mockHandShake(FAKE_BASEURL, bpFakeUserId)
-    blockpassApiMock.mockMatchingData(FAKE_BASEURL, bpFakeUserId, null, 1)
-
-    const ins = createIns()
-
-    const step1 = await ins.queryStatusFlow({ code: bpFakeUserId })
-
-    expect(step1.status).toEqual('waiting')
-
-    blockpassApiMock.checkPending()
-    blockpassApiMock.clearAll()
-  })
-
-  test('[found][sso] query-kyc', async () => {
-    const bpFakeUserId = '5ad862240a176722f25fede3'
-    const sessionCode = '1'
-
-    // Mock API
-    blockpassApiMock.mockHandShake(FAKE_BASEURL, bpFakeUserId)
-    blockpassApiMock.mockMatchingData(FAKE_BASEURL, bpFakeUserId, null, 1)
-    blockpassApiMock.mockSSoComplete(FAKE_BASEURL)
+    blockpassApiMock.mockQueryProofOfPath(FAKE_BASEURL, {
+      status: 'success',
+      proofList: PROOF_LIST
+    })
+    blockpassApiMock.mockQueryRefreshToken(FAKE_BASEURL)
 
     const ins = createIns()
 
-    const step1 = await ins.queryStatusFlow({ code: bpFakeUserId, sessionCode })
+    const kycRecord = await KYCModel.findById(kycId)
 
-    expect(step1.status).toEqual('waiting')
+    // Query proof path
+    const step1 = await ins.queryProofOfPath({
+      kycToken: kycRecord.bpToken,
+      slugList: ['phone']
+    })
+    const { proofOfPath, bpToken } = step1
+
+    expect(proofOfPath).not.toBeNull()
+    expect(bpToken).not.toBeNull()
 
     blockpassApiMock.checkPending()
     blockpassApiMock.clearAll()

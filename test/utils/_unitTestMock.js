@@ -1,16 +1,26 @@
+/* eslint-disable */
 const nock = require('nock')
 const api = require('../../src/lib/config').api
 
-module.exports.clearAll = function () {
-  nock.cleanAll()
+const activeScopes = []
+
+function addNock(url) {
+  const scope = nock(url)
+  activeScopes.push(scope)
+  return scope
 }
 
-module.exports.checkPending = function () {
-  const pendings = nock.pendingMocks()
-  if (nock.pendingMocks().length > 0) { throw new Error('Pending Mock Http ' + pendings) }
+module.exports.clearAll = function() {
+  activeScopes.length = 0
+  // nock.cleanAll();
 }
 
-module.exports.mockHandShake = function (
+module.exports.checkPending = function() {
+  const pendings = activeScopes.filter(itm => !itm.isDone())
+  if (pendings.length > 0) throw new Error(`Pending Mock Http ${pendings}`)
+}
+
+module.exports.mockHandShake = function(
   baseUrl,
   code,
   response = null,
@@ -23,15 +33,18 @@ module.exports.mockHandShake = function (
     refresh_token: 'fake_also',
     _fakeId: code
   }
-  nock(baseUrl)
+  addNock(baseUrl)
     .post(api.HAND_SHAKE_PATH, body => {
       return body.code === code
     })
     .times(numCall)
-    .reply(200, response)
+    .reply(200, {
+      status: 'success',
+      data: response
+    })
 }
 
-module.exports.mockMatchingData = function (
+module.exports.mockMatchingData = function(
   baseUrl,
   fakeId,
   response = null,
@@ -41,21 +54,24 @@ module.exports.mockMatchingData = function (
     id: fakeId || Date.now().toString()
   }
 
-  nock(baseUrl)
+  addNock(baseUrl)
     .matchHeader('Authorization', 'fake')
-    .post(api.MATCHING_INFO_PATH, body => {
+    .get(api.MATCHING_INFO_PATH, body => {
       return true
     })
     .times(numCall)
-    .reply(200, response)
+    .reply(200, {
+      status: 'success',
+      data: response
+    })
 }
 
-module.exports.mockSSoComplete = function (baseUrl, response = null) {
+module.exports.mockSSoComplete = function(baseUrl, response = null) {
   response = response || {
     status: 'success'
   }
 
-  nock(baseUrl)
+  addNock(baseUrl)
     .matchHeader('Authorization', 'fake')
     .post(api.SSO_COMPETE_PATH, body => {
       return true
@@ -63,20 +79,23 @@ module.exports.mockSSoComplete = function (baseUrl, response = null) {
     .reply(200, response)
 }
 
-module.exports.mockQueryProofOfPath = function (baseUrl, response = null) {
+module.exports.mockQueryProofOfPath = function(baseUrl, response = null) {
   response = response || {
     status: 'success',
     proofList: {}
   }
 
-  nock(baseUrl)
+  addNock(baseUrl)
     .post(api.GET_PROOF_OF_PATH, body => {
       return true
     })
-    .reply(200, response)
+    .reply(200, {
+      status: 'success',
+      data: response
+    })
 }
 
-module.exports.mockQueryRefreshToken = function (baseUrl, response = null) {
+module.exports.mockQueryRefreshToken = function(baseUrl, response = null) {
   response = response || {
     access_token: 'fake',
     token_type: 'fake',
@@ -84,22 +103,81 @@ module.exports.mockQueryRefreshToken = function (baseUrl, response = null) {
     refresh_token: 'fake_also'
   }
 
-  nock(baseUrl)
+  addNock(baseUrl)
     .post(api.REFRESH_TOKEN_PATH, body => {
       return true
     })
-    .reply(200, response)
+    .reply(200, {
+      status: 'success',
+      data: response
+    })
 }
 
-module.exports.mockUserNotice = function (baseUrl, response = null) {
-  response = response || {
-    status: 'success',
-    proofList: {}
-  }
+module.exports.mockNoticeUser = function(baseUrl, response = null) {
+  response = response || {}
 
-  nock(baseUrl)
+  addNock(baseUrl)
     .post(api.NOTIFICATION_PATH, body => {
       return true
     })
+    .reply(200, {
+      status: 'success',
+      data: response
+    })
+}
+
+module.exports.mockDeactiveUser = function(baseUrl, response = null) {
+  response = response || {}
+
+  addNock(baseUrl)
+    .post(api.DEACTIVE_USER_PATH, body => {
+      return true
+    })
+    .reply(200, {
+      status: 'success',
+      data: response
+    })
+}
+
+module.exports.mockQueryServiceMetadata = function(
+  baseUrl,
+  serviceId,
+  response
+) {
+  nock(baseUrl)
+    .persist()
+    .get(api.META_DATA_PATH + serviceId)
     .reply(200, response)
+}
+
+module.exports.mockSignCertificate = function(baseUrl, response) {
+  addNock(baseUrl)
+    .put(api.CERTIFICATE_ACCEPT_PATH)
+    .reply(200, {
+      status: 'success',
+      data: response
+    })
+}
+
+module.exports.mockPublicKey = function(baseUrl, hash, response) {
+  addNock(baseUrl)
+    .get(api.PUBKEY_PATH + hash)
+    .reply(200, response)
+}
+
+module.exports.mockPnPersist = function(baseUrl) {
+  addNock(baseUrl)
+    .persist()
+    .post(api.REFRESH_TOKEN_PATH, body => true)
+    .reply(200, {
+      access_token: 'fake',
+      token_type: 'fake',
+      expires_in: 3600,
+      refresh_token: 'fake_also'
+    })
+
+  addNock(baseUrl)
+    .persist()
+    .post(api.NOTIFICATION_PATH, body => true)
+    .reply(200, {})
 }

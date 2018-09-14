@@ -1,5 +1,6 @@
 const ServerSdk = require('../src')
 const Memories = require('./utils/Memories')
+const blockpassApiMock = require('./utils/_unitTestMock')
 const { KYCModel, FileStorage } = Memories
 
 const FAKE_CLIENTID = 'unitTest'
@@ -103,7 +104,14 @@ async function generateSsoPayload ({
   }
 }
 
-function createIns ({ find, create, update, reCheck, query, ssoPayload } = {}) {
+function createInsManual ({
+  find,
+  create,
+  update,
+  reCheck,
+  query,
+  ssoPayload
+} = {}) {
   return new ServerSdk({
     baseUrl: FAKE_BASEURL,
     clientId: FAKE_CLIENTID,
@@ -122,13 +130,62 @@ function createIns ({ find, create, update, reCheck, query, ssoPayload } = {}) {
   })
 }
 
+function createInsWithAutoFetch ({
+  find,
+  create,
+  update,
+  reCheck,
+  query,
+  ssoPayload
+} = {}) {
+  return new ServerSdk({
+    baseUrl: FAKE_BASEURL,
+    clientId: FAKE_CLIENTID,
+    secretId: FAKE_SECRETID,
+    autoFetchMetadata: true,
+
+    // Custom implement
+    findKycById: findKycById || find,
+    createKyc: createKyc || create,
+    updateKyc: updateKyc || update,
+    queryKycStatus: queryKycStatus || query,
+    needRecheckExistingKyc: needRecheckExistingKyc || reCheck,
+    generateSsoPayload: generateSsoPayload || ssoPayload
+  })
+}
+
 describe('basic', () => {
   beforeEach(() => {
     KYCModel.reset()
   })
 
-  it('init-sdk', () => {
-    const ins = createIns()
+  test('init-sdk', () => {
+    const ins = createInsManual()
     expect(ins).not.toBeNull()
+  })
+
+  test('init-sdk-autoFetch', done => {
+    blockpassApiMock.mockQueryServiceMetadata(
+      FAKE_BASEURL,
+      FAKE_CLIENTID,
+      require('./utils/_serviceMetadata.json')
+    )
+
+    const ins = createInsWithAutoFetch()
+    expect(ins).not.toBeNull()
+    ins.on('onLoaded', _ => {
+      expect(ins.requiredFields).toEqual([
+        'address',
+        'dob',
+        'email',
+        'family_name',
+        'given_name',
+        'passport',
+        'phone',
+        'proof_of_address',
+        'selfie'
+      ])
+      done()
+    })
   })
 })

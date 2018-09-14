@@ -19,10 +19,11 @@ async function findKycById (kycId) {
 }
 
 // -------------------------------------------------------------------------
-async function createKyc ({ kycProfile }) {
+async function createKyc ({ kycProfile, refId }) {
   const { id, smartContractId, rootHash, isSynching } = kycProfile
   const newIns = new KYCModel({
     blockPassID: id,
+    refId,
     rootHash,
     smartContractId,
     isSynching
@@ -115,8 +116,9 @@ describe('register', () => {
     KYCModel.reset()
   })
 
-  it('register[new record]', async () => {
+  test('register[new record]', async () => {
     const bpFakeUserId = Date.now().toString()
+    const refId = 'i-am-ref-id' + Date.now().toString()
 
     // Mock API
     blockpassApiMock.mockHandShake(FAKE_BASEURL, bpFakeUserId)
@@ -124,7 +126,7 @@ describe('register', () => {
 
     const ins = createIns()
 
-    const step1 = await ins.registerFlow({ code: bpFakeUserId })
+    const step1 = await ins.registerFlow({ code: bpFakeUserId, refId })
     expect(step1.nextAction).toEqual('upload')
     expect(step1.requiredFields).toEqual(REQUIRED_FIELDS)
 
@@ -142,11 +144,17 @@ describe('register', () => {
 
     expect(step2.nextAction).toEqual('none')
 
+    // check refId
+    const model = await KYCModel.findOne({
+      blockPassID: bpFakeUserId
+    })
+    expect(model.refId).toEqual(refId)
+
     blockpassApiMock.checkPending()
     blockpassApiMock.clearAll()
   })
 
-  it('register[existing record] - error', async () => {
+  test('register[existing record] - error', async () => {
     const bpFakeUserId = '1522257024962'
 
     // Mock API

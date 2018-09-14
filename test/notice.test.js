@@ -122,15 +122,15 @@ function createIns ({ find, create, update, reCheck, query, ssoPayload } = {}) {
   })
 }
 
-describe('validate', () => {
+describe('noti', () => {
   beforeEach(() => {
     KYCModel.reset()
   })
 
-  it('noti to user', async () => {
+  test('noti to user', async () => {
     const kycId = '5addc3a70476a51e3c3f4290'
 
-    blockpassApiMock.mockUserNotice(FAKE_BASEURL, {
+    blockpassApiMock.mockNoticeUser(FAKE_BASEURL, {
       status: 'success'
     })
 
@@ -151,10 +151,10 @@ describe('validate', () => {
     blockpassApiMock.clearAll()
   })
 
-  it('noti to user and accessToken refresh', async () => {
+  test('noti to user and accessToken refresh', async () => {
     const kycId = '5ad967142219d02223ae44b3'
 
-    blockpassApiMock.mockUserNotice(FAKE_BASEURL, {
+    blockpassApiMock.mockNoticeUser(FAKE_BASEURL, {
       status: 'success'
     })
     blockpassApiMock.mockQueryRefreshToken(FAKE_BASEURL)
