@@ -1,6 +1,6 @@
 {
   "name": "bp-sdk-server",
-  "version": "1.4",
+  "version": "1.4.0",
   "description": "Blockpass Sdk server",
   "license": "MIT",
   "repository": "https://github.com/blockpass-org/blockpass-serversdk",
