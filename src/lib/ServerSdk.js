@@ -64,7 +64,7 @@ class ServerSdk extends EventEmitter {
     autoFetchMetadata
   }: ConstructorParams) {
     super()
-    if (clientId == null) {
+    if (clientId == null || secretId == null) {
       throw new Error('Missing clientId or secretId')
     }
 

@@ -8,34 +8,8 @@ const { KYCModel, FileStorage } = require('./SimpleStorage')
 const config = {
   BASE_URL: 'https://sandbox-api.blockpass.org',
   BLOCKPASS_CLIENT_ID: 'developer_service',
-  BLOCKPASS_SECRET_ID: 'developer_service',
-  REQUIRED_FIELDS: ['phone'],
-  OPTIONAL_FIELDS: [],
-  OPTIONAL_CERTS: [
-    'onfido',
-    'onfido-service-cert',
-    'complyadvantage-service-cert'
-  ]
+  BLOCKPASS_SECRET_ID: 'developer_service'
 }
-
-// -------------------------------------------------------------------------
-//  Blockpass Server SDK
-// -------------------------------------------------------------------------
-const serverSdk = new ServerSDK({
-  baseUrl: config.BASE_URL,
-  clientId: config.BLOCKPASS_CLIENT_ID,
-  secretId: config.BLOCKPASS_SECRET_ID,
-  requiredFields: config.REQUIRED_FIELDS,
-  optionalFields: config.OPTIONAL_FIELDS,
-  certs: config.OPTIONAL_CERTS,
-
-  // Custom implement
-  findKycById: findKycById,
-  createKyc: createKyc,
-  updateKyc: updateKyc,
-  queryKycStatus: queryKycStatus,
-  generateSsoPayload: generateSsoPayload
-})
 
 // -------------------------------------------------------------------------
 //  Logic Handler
@@ -44,16 +18,17 @@ async function findKycById (kycId) {
   return await KYCModel.findOne({ blockPassID: kycId })
 }
 
-async function createKyc ({ kycProfile }) {
+async function createKyc ({ kycProfile, refId }) {
   const { id, smartContractId, rootHash, isSynching } = kycProfile
   const newIns = new KYCModel({
     blockPassID: id,
+    refId,
     rootHash,
     smartContractId,
     isSynching
   })
 
-  newIns.certs = config.OPTIONAL_CERTS.reduce((acc, key) => {
+  newIns.certs = serverSdk.certs.reduce((acc, key) => {
     acc[key] = {
       slug: key,
       status: 'missing'
@@ -61,7 +36,7 @@ async function createKyc ({ kycProfile }) {
     return acc
   }, {})
 
-  newIns.identities = config.REQUIRED_FIELDS.reduce((acc, key) => {
+  newIns.identities = serverSdk.requiredFields.reduce((acc, key) => {
     acc[key] = {
       slug: key,
       status: 'missing'
@@ -96,8 +71,6 @@ async function updateKyc ({ kycRecord, kycProfile, kycToken, userRawData }) {
       }
     }
 
-    await Promise.all(jobs)
-
     const { buffer, originalname } = metaData
     const ext = originalname.split('.')[1]
     const fileName = `${id}_${key}.${ext}`
@@ -115,6 +88,9 @@ async function updateKyc ({ kycRecord, kycProfile, kycToken, userRawData }) {
       comment: ''
     })
   })
+
+  await Promise.all(jobs)
+
   // calculate token expired date from 'expires_in'
   const expiredDate = new Date(Date.now() + kycToken.expires_in * 1000)
   kycRecord.bpToken = {
@@ -249,9 +225,9 @@ router.post('/blockpass/api/uploadData', upload.any(), async (req, res) => {
 // -------------------------------------------------------------------------
 router.post('/blockpass/api/login', async (req, res) => {
   try {
-    const { code, sessionCode } = req.body
+    const { code, sessionCode, refId } = req.body
 
-    const payload = await serverSdk.loginFow({ code, sessionCode })
+    const payload = await serverSdk.loginFow({ code, sessionCode, refId })
     return res.json(payload)
   } catch (ex) {
     console.error(ex)
@@ -265,9 +241,9 @@ router.post('/blockpass/api/login', async (req, res) => {
 // -------------------------------------------------------------------------
 router.post('/blockpass/api/register', async (req, res) => {
   try {
-    const { code } = req.body
+    const { code, refId } = req.body
 
-    const payload = await serverSdk.registerFlow({ code })
+    const payload = await serverSdk.registerFlow({ code, refId })
     return res.json(payload)
   } catch (ex) {
     console.error(ex)
@@ -359,12 +335,38 @@ router.post('/util/sendPn', async (req, res) => {
   }
 })
 
-const port = process.env.SERVER_PORT || 3000
-let server = app.listen(port, '0.0.0.0', function () {
-  console.log(`Listening on port ${port}...`)
+// -------------------------------------------------------------------------
+//  Blockpass Server SDK
+// -------------------------------------------------------------------------
+const serverSdk = new ServerSDK({
+  baseUrl: config.BASE_URL,
+  clientId: config.BLOCKPASS_CLIENT_ID,
+  secretId: config.BLOCKPASS_SECRET_ID,
+  autoFetchMetadata: true,
+
+  // Custom implement
+  findKycById: findKycById,
+  createKyc: createKyc,
+  updateKyc: updateKyc,
+  queryKycStatus: queryKycStatus,
+  generateSsoPayload: generateSsoPayload
 })
 
-// gracefull shutdown
-app.close = _ => server.close()
+// Sdk loaded
+serverSdk.once('onLoaded', _ => {
+  const port = process.env.SERVER_PORT || 3000
+  let server = app.listen(port, '0.0.0.0', function () {
+    console.log(`Listening on port ${port}...`)
+  })
+
+  // gracefull shutdown
+  app.close = _ => server.close()
+})
+
+// Sdk error
+serverSdk.once('onError', err => {
+  console.error(err)
+  process.exit(1)
+})
 
 module.exports = app

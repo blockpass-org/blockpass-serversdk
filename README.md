@@ -1,21 +1,22 @@
 # Blockpass Server SDK
 
 ## Working Flow:
+
 ![flow](doc/mobile-app-endpoints.png)
 
 ## Terms:
 
--   **Endpoints**:
+* **Endpoints**:
 
-    -   `/status`: Kyc status endpoints. Called by mobile app. Response **KycRecordStatus**
-    -   `/login`: SSO endpoints. Called by mobile app. Triggered by scanning qr code or opening Applink
-    -   `/register`: Registration or re-new certificate request (later). Triggered by pressing **Register** button on mobile application
-    -   `/resubmit`: Update data for existing KYC record
-    -   `/upload`: Upload user rawData. Triggered when mobile application receives **nextAction=upload** returned by `/login`, `/register` or `/resubmit`
+  * `/status`: Kyc status endpoints. Called by mobile app. Response **KycRecordStatus**
+  * `/login`: SSO endpoints. Called by mobile app. Triggered by scanning qr code or opening Applink
+  * `/register`: Registration or re-new certificate request (later). Triggered by pressing **Register** button on mobile application
+  * `/resubmit`: Update data for existing KYC record
+  * `/upload`: Upload user rawData. Triggered when mobile application receives **nextAction=upload** returned by `/login`, `/register` or `/resubmit`
 
--   **KycProfile**: User profile object returned by Blockpass Api
--   **KycToken**: Access token object. Use to exchange data between Services and Blockpass API (each user will have different token)
--   **KycRecord**: Object stored kyc data, managed by Services. It usually contains 3 parts(BlockpassKycProfile + RawData + Service Extra Info)
+* **KycProfile**: User profile object returned by Blockpass Api
+* **KycToken**: Access token object. Use to exchange data between Services and Blockpass API (each user will have different token)
+* **KycRecord**: Object stored kyc data, managed by Services. It usually contains 3 parts(BlockpassKycProfile + RawData + Service Extra Info)
 
 Example:
 
@@ -26,7 +27,7 @@ Example:
     //
 
     blockpassId: 'service_udid',// udid of user ( unique for each services )
-    kycToken: {...}, // kycToken for this user 
+    kycToken: {...}, // kycToken for this user
     rootHash: 'sha3-hash' // user root of merke tree
     isSynching: "syncing" | "complete" // status of smartcontract syncing
 
@@ -36,7 +37,7 @@ Example:
 
     phone: xxx,
     email: yyy,
-    [cer]onfido: '....', 
+    [cer]onfido: '....',
 
     //
     //[Service Extra info]
@@ -45,7 +46,7 @@ Example:
 }
 ```
 
--   **KycRecordStatus**: Object stored kycRecord status following Mobile App format
+* **KycRecordStatus**: Object stored kycRecord status following Mobile App format
 
 ```javascript
 // Format
@@ -75,13 +76,13 @@ Example:
 
 ## Getting Started
 
--   **Step 1**: Declare logic handler
+* **Step 1**: Declare logic handler
 
-    1.  `findKycById`: Find and return KycRecord
-    2.  `createKyc`: Create new kycRecord
-    3.  `updateKyc`: Update kycRecord
-    4.  `queryKycStatus`: Query KycRecord status
-    5.  `generateSsoPayload`: Generate SSo payload (this custom data will be sent to web-client)
+  1.  `findKycById`: Find and return KycRecord
+  2.  `createKyc`: Create new kycRecord
+  3.  `updateKyc`: Update kycRecord
+  4.  `queryKycStatus`: Query KycRecord status
+  5.  `generateSsoPayload`: Generate SSo payload (this custom data will be sent to web-client)
 
 ```javascript
 const sdk = new ServerSdk({
@@ -90,9 +91,7 @@ const sdk = new ServerSdk({
     baseUrl: BLOCKPASS_BASEURL,
     clientId: SERVICE_CLIENTID,
     secretId: SERVICE_SECRETID,
-    requiredFields: REQUIRED_FIELDS,
-    optionalFields: OPTIONAL_FIELDS,
-    certs: OPTIONAL_CERTS,
+    autoFetchMetadata: true
 
     // Custom implement
     findKycById: findKycById ,
@@ -102,8 +101,16 @@ const sdk = new ServerSdk({
     generateSsoPayload: generateSsoPayload
 })
 
+sdk.once('onLoaded', _ => {
+    // Sdk loaded
+})
+
+sdk.once('onError' _ => {
+    // Sdk init error
+})
+
 //-------------------------------------------------------------------------
-// blockpassId -> kycRecord
+// lookup blockpassId -> kycRecord
 //-------------------------------------------------------------------------
 async function findKycById(blockpassId) {
     return await KYCModel.findOne({ blockPassID })
@@ -112,10 +119,11 @@ async function findKycById(blockpassId) {
 //-------------------------------------------------------------------------
 // Update create new kycRecord
 //-------------------------------------------------------------------------
-async function createKyc({ kycProfile }) {
+async function createKyc({ kycProfile, refId }) {
     const { id, smartContractId, rootHash, isSynching } = kycProfile;
     const newIns = new KYCModel({
         blockPassID: id,
+        refId,
         rootHash,
         smartContractId,
         isSynching
@@ -139,10 +147,10 @@ async function updateKyc({
     const jobs = Object.keys(userRawData).map(async (key) => {
         const metaData = userRawData[key];
 
-        if (metaData.type == 'string')
+        if (metaData.type === 'string')
             return kycRecord[key] = metaData.value
 
-        if (metaData.type == 'file') {
+        if (metaData.type === 'file') {
             const { buffer, originalname } = metaData;
             const ext = originalname.split('.')[1];
             const fileName = `${id}_${key}.${ext}`;
@@ -158,7 +166,7 @@ async function updateKyc({
         }
     })
 
-    const waitingJob = await Promise.all(jobs);
+    await Promise.all(jobs);
 
     // [Advanced] - Link kyc record with existing user data in your database
     // Example: This email|phone contained in our database
@@ -202,35 +210,15 @@ async function generateSsoPayload({ kycProfile, kycRecord, kycToken, payload }) 
 }
 ```
 
--   **Step 2**: Create api:
-    1.  /login -> sdk.loginFow(...)
-    2.  /upload -> sdk.updateDataFlow(...)
-    3.  /register -> sdk.registerFlow(...)
-    4.  /status -> sdk.queryStatusFlow(...)
-    5.  /status -> sdk.resubmitDataFlow(...)
+* **Step 2**: Create api:
+  1.  /login -> sdk.loginFow(...)
+  2.  /upload -> sdk.updateDataFlow(...)
+  3.  /register -> sdk.registerFlow(...)
+  4.  /status -> sdk.queryStatusFlow(...)
+  5.  /resubmit -> sdk.resubmitDataFlow(...)
 
 
     Ps: See express `examples`
-
--   **Step 3**: Checking completed kycRecord 
-
-    => Merkle Root check
-
-    [Todo in v2]
-
-
-    => Check roothash with SmartContract
-
-    [Todo in v3]
-
-
-    => Approve | Reject decision
-
-    [Todo in v2]
-
-    => Generate certificate
-
-    [Todo in v2]
 
 ## Development Commands
 
@@ -245,7 +233,6 @@ $ npm run build # generate docs and transpile code
 ## API Documents
 
 [Documents](./doc/api.md)
-
 
 ## License
 
