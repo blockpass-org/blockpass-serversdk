@@ -1,5 +1,5 @@
 const request = require('superagent')
-const api = require('./config').api
+const { api, SDKAuthCode } = require('./config')
 
 class BlockpassHttpProvider {
   constructor (options) {
@@ -14,13 +14,39 @@ class BlockpassHttpProvider {
     this._secretId = secretId
   }
 
-  async queryServiceMetadata () {
+  async queryPublicKey (hash) {
     try {
+      // remove begin slash
+      if (hash.startsWith('/')) hash = hash.substr(1, hash.length)
+
       const { _baseUrl } = this
 
-      const metaDataResponse = await request.get(
-        _baseUrl + api.META_DATA_PATH + this._clientId
+      const pubKeyResponse = await request.get(
+        _baseUrl + api.PUBKEY_PATH + hash
       )
+
+      if (pubKeyResponse.status !== 200) {
+        console.error('[BlockPass] queryPublicKey Error', pubKeyResponse.text)
+        return null
+      }
+
+      return pubKeyResponse.body
+    } catch (error) {
+      console.error('queryPublicKey failed: ', error)
+      return null
+    }
+  }
+
+  async queryServiceMetadata () {
+    try {
+      const { _secretId, _baseUrl } = this
+
+      const metaDataResponse = await request
+        .get(_baseUrl + api.META_DATA_PATH + this._secretId)
+        .set({
+          Authorization: SDKAuthCode,
+          'x-client-secret': _secretId
+        })
 
       if (metaDataResponse.status !== 200) {
         console.error(
@@ -36,7 +62,33 @@ class BlockpassHttpProvider {
       return null
     }
   }
-  async doHandShake (code, sessionCode) {
+
+  async queryCertificateSchema (cerId) {
+    try {
+      const { _baseUrl } = this
+
+      const url = _baseUrl + api.CERTIFICATE_SCHEMA + cerId
+      const metaDataResponse = await request.get(url)
+
+      if (metaDataResponse.status !== 200) {
+        console.error(
+          '[BlockPass] queryCertificateSchema Error',
+          metaDataResponse.text
+        )
+        return null
+      }
+
+      const schemaContent = metaDataResponse.body
+
+      schemaContent.url = url
+      return schemaContent
+    } catch (error) {
+      console.error('queryCertificateSchema failed: ', error)
+      return null
+    }
+  }
+
+  async doHandShake (code, session_code) {
     try {
       const { _clientId, _secretId, _baseUrl } = this
 
@@ -47,7 +99,7 @@ class BlockpassHttpProvider {
           client_secret: _secretId,
           code,
           grant_type: 'authoriaztioncode',
-          session_code: sessionCode
+          session_code
         })
 
       if (handShakeResponse.status !== 200) {
@@ -55,7 +107,7 @@ class BlockpassHttpProvider {
         return null
       }
 
-      return handShakeResponse.body
+      return handShakeResponse.body.data
     } catch (error) {
       console.error('Handshake failed: ', error)
       return null
@@ -67,7 +119,7 @@ class BlockpassHttpProvider {
       const { _baseUrl } = this
 
       const userProfileResponse = await request
-        .post(_baseUrl + api.MATCHING_INFO_PATH)
+        .get(_baseUrl + api.MATCHING_INFO_PATH)
         .set({
           Authorization: handShakeToken.access_token
         })
@@ -81,7 +133,7 @@ class BlockpassHttpProvider {
         return null
       }
 
-      return userProfileResponse.body
+      return userProfileResponse.body.data
     } catch (error) {
       console.error('Query Profile failed: ', error)
       return null
@@ -117,7 +169,7 @@ class BlockpassHttpProvider {
     }
   }
 
-  async notifyLoginFailed (bpToken, error) {
+  async notifyLoginFailed (bpToken, errorData) {
     try {
       const { _baseUrl } = this
 
@@ -128,7 +180,9 @@ class BlockpassHttpProvider {
         })
         .send({
           result: 'failed',
-          custom_data: JSON.stringify({})
+          custom_data: JSON.stringify({
+            errorData
+          })
         })
 
       if (ssoCompleteResponse.status !== 200) {
@@ -150,12 +204,12 @@ class BlockpassHttpProvider {
       const now = new Date()
       if (bpToken.expires_at && bpToken.expires_at > now) return bpToken
 
-      const { access_token: accessToken, refresh_token: refreshToken } = bpToken
+      const { access_token, refresh_token } = bpToken
       const refreshTokenResponse = await request
         .post(_baseUrl + api.REFRESH_TOKEN_PATH)
         .send({
-          stoc: accessToken,
-          stoc_refresh: refreshToken,
+          stoc: access_token,
+          stoc_refresh: refresh_token,
           client_secret: _secretId
         })
 
@@ -164,14 +218,14 @@ class BlockpassHttpProvider {
         return null
       }
 
-      return refreshTokenResponse.body
+      return refreshTokenResponse.body.data
     } catch (error) {
       console.error('_checkAndRefreshAccessToken failed: ', error)
       return null
     }
   }
 
-  async queryProofOfPath (bpToken, slugList) {
+  async queryProofOfPath (bpToken, slug_list) {
     // check refresh bpToken
     bpToken = await this._checkAndRefreshAccessToken(bpToken)
     const { _baseUrl } = this
@@ -183,7 +237,7 @@ class BlockpassHttpProvider {
           Authorization: bpToken.access_token
         })
         .send({
-          slug_list: slugList
+          slug_list
         })
 
       if (ssoQueryPathResponse.status !== 200) {
@@ -195,7 +249,7 @@ class BlockpassHttpProvider {
       }
 
       return {
-        proofOfPath: ssoQueryPathResponse.body,
+        proofOfPath: ssoQueryPathResponse.body.data,
         bpToken
       }
     } catch (error) {
@@ -203,7 +257,36 @@ class BlockpassHttpProvider {
       return null
     }
   }
-  async notifyUser (bpToken, msg, title = 'Information') {
+
+  async acceptCertificate (bpToken, cerDocument) {
+    // check refresh bpToken
+    bpToken = await this._checkAndRefreshAccessToken(bpToken)
+    const { _baseUrl } = this
+
+    try {
+      const putCertResponse = await request
+        .put(_baseUrl + api.CERTIFICATE_ACCEPT_PATH)
+        .set({
+          Authorization: bpToken.access_token
+        })
+        .send(cerDocument)
+
+      if (putCertResponse.status !== 200) {
+        console.log('[BlockPass] acceptCertificate Error', putCertResponse.text)
+        return null
+      }
+
+      return {
+        res: putCertResponse.body.data,
+        bpToken
+      }
+    } catch (error) {
+      console.error(error)
+      return null
+    }
+  }
+
+  async notifyUser (bpToken, msg, action = '', type = 'info') {
     // check refresh bpToken
     bpToken = await this._checkAndRefreshAccessToken(bpToken)
     const { _baseUrl } = this
@@ -215,11 +298,9 @@ class BlockpassHttpProvider {
           Authorization: bpToken.access_token
         })
         .send({
-          noti: {
-            type: 'info',
-            title,
-            mssg: msg
-          }
+          type,
+          action,
+          mssg: msg
         })
 
       if (putCertResponse.status !== 200) {
@@ -229,6 +310,34 @@ class BlockpassHttpProvider {
 
       return {
         res: putCertResponse.body,
+        bpToken
+      }
+    } catch (error) {
+      console.error(error)
+      return null
+    }
+  }
+
+  async deactivateUser (bpToken) {
+    // check refresh bpToken
+    bpToken = await this._checkAndRefreshAccessToken(bpToken)
+    const { _baseUrl } = this
+
+    try {
+      const deactiveResponse = await request
+        .post(_baseUrl + api.DEACTIVE_USER_PATH)
+        .set({
+          Authorization: bpToken.access_token
+        })
+        .send()
+
+      if (deactiveResponse.status !== 200) {
+        console.log('[BlockPass] deactivateUser Error', deactiveResponse.text)
+        return null
+      }
+
+      return {
+        res: deactiveResponse.body,
         bpToken
       }
     } catch (error) {
