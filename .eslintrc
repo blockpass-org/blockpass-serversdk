@@ -8,6 +8,7 @@
   "rules": {
     "flowtype-errors/show-errors": "error",
     "no-underscore-dangle": "off",
-    "no-return-await": "off"
+    "no-return-await": "off",
+    "camelcase": "warn"
   }
 }
