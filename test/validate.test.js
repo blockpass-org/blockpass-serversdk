@@ -1,213 +1,216 @@
-const faker = require('faker');
 const ServerSdk = require('../src')
-const Memories = require('./utils/Memories');
-const blockpassApiMock = require('./utils/_unitTestMock');
-const { KYCModel, FileStorage } = Memories;
+const Memories = require('./utils/Memories')
+const blockpassApiMock = require('./utils/_unitTestMock')
+const { KYCModel, FileStorage } = Memories
 
-const FAKE_CLIENTID = "unitTest"
-const FAKE_SECRETID = "unitTest"
-const FAKE_BASEURL = "http://mockapi"
+const FAKE_CLIENTID = 'unitTest'
+const FAKE_SECRETID = 'unitTest'
+const FAKE_BASEURL = 'http://mockapi'
 const REQUIRED_FIELDS = ['phone']
 const OPTIONAL_FIELDS = []
 const OPTIONAL_CERTS = ['onfido']
 
 const PROOF_LIST = {
-    "phone": [
-        {
-            "parent": "8fe3d939a77cf7431f81f5c90293444e96b30417fab43d67674566af0f0d302b",
-            "left": "cd5ea2c19e4e01ac28345749bc48882c299e2dbb2398b23e82531583f22fe59f",
-            "right": "1fb9acd13760f238e64ea7bc87b776799c55a4a0b94bb68a7fc9be4930b1b1af"
-        },
-        {
-            "parent": "672276ede571a3e4b461b53057b766b287c3d0e05bb003222c84a9a96bd72651",
-            "left": "8fe3d939a77cf7431f81f5c90293444e96b30417fab43d67674566af0f0d302b",
-            "right": "5b43a0086ddc5aca1aae722ac5a8a328b8539af5e83ce7232802f075d718a696"
-        },
-        {
-            "parent": "05d72fa347994a3ae0228d898ee55054975b2dfd7a6a30592e8ee06c0cfde1ac",
-            "left": "6dbdc13d7bc9d2776211398e7059f2bd1870083a2a29448456a30adcc1c4ce00",
-            "right": "672276ede571a3e4b461b53057b766b287c3d0e05bb003222c84a9a96bd72651"
-        },
-        {
-            "parent": "01edf3645eef35d41b315523b5f62849f3ca0dbc07b3562d9245d9c7ce88a2bb",
-            "left": "05d72fa347994a3ae0228d898ee55054975b2dfd7a6a30592e8ee06c0cfde1ac",
-            "right": "a28adb8671b32df77db8150fbfc5eb4ee98007abf2e2169e48f64ba06a9322d5"
-        }
-    ]
+  phone: [
+    {
+      parent:
+        '8fe3d939a77cf7431f81f5c90293444e96b30417fab43d67674566af0f0d302b',
+      left: 'cd5ea2c19e4e01ac28345749bc48882c299e2dbb2398b23e82531583f22fe59f',
+      right: '1fb9acd13760f238e64ea7bc87b776799c55a4a0b94bb68a7fc9be4930b1b1af'
+    },
+    {
+      parent:
+        '672276ede571a3e4b461b53057b766b287c3d0e05bb003222c84a9a96bd72651',
+      left: '8fe3d939a77cf7431f81f5c90293444e96b30417fab43d67674566af0f0d302b',
+      right: '5b43a0086ddc5aca1aae722ac5a8a328b8539af5e83ce7232802f075d718a696'
+    },
+    {
+      parent:
+        '05d72fa347994a3ae0228d898ee55054975b2dfd7a6a30592e8ee06c0cfde1ac',
+      left: '6dbdc13d7bc9d2776211398e7059f2bd1870083a2a29448456a30adcc1c4ce00',
+      right: '672276ede571a3e4b461b53057b766b287c3d0e05bb003222c84a9a96bd72651'
+    },
+    {
+      parent:
+        '01edf3645eef35d41b315523b5f62849f3ca0dbc07b3562d9245d9c7ce88a2bb',
+      left: '05d72fa347994a3ae0228d898ee55054975b2dfd7a6a30592e8ee06c0cfde1ac',
+      right: 'a28adb8671b32df77db8150fbfc5eb4ee98007abf2e2169e48f64ba06a9322d5'
+    }
+  ]
 }
-//-------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 //  Logic Handler
-//-------------------------------------------------------------------------
-async function findKycById(kycId) {
-    return await KYCModel.findOne({ blockPassID: kycId })
+// -------------------------------------------------------------------------
+async function findKycById (kycId) {
+  return await KYCModel.findOne({ blockPassID: kycId })
 }
 
-//-------------------------------------------------------------------------
-async function createKyc({ kycProfile }) {
-    const { id, smartContractId, rootHash, isSynching } = kycProfile;
-    const newIns = new KYCModel({
-        blockPassID: id,
-        rootHash,
-        smartContractId,
-        isSynching
+// -------------------------------------------------------------------------
+async function createKyc ({ kycProfile }) {
+  const { id, smartContractId, rootHash, isSynching } = kycProfile
+  const newIns = new KYCModel({
+    blockPassID: id,
+    rootHash,
+    smartContractId,
+    isSynching
+  })
+
+  return await newIns.save()
+}
+
+// -------------------------------------------------------------------------
+async function updateKyc ({ kycRecord, kycProfile, kycToken, userRawData }) {
+  const { id, smartContractId, rootHash, isSynching } = kycProfile
+
+  const jobs = Object.keys(userRawData).map(async key => {
+    const metaData = userRawData[key]
+
+    if (metaData.type === 'string') return (kycRecord[key] = metaData.value)
+
+    const { buffer, originalname } = metaData
+    const ext = originalname.split('.')[1]
+    const fileName = `${id}_${key}.${ext}`
+    const fileHandler = await FileStorage.writeFile({
+      fileName,
+      mimetype: `image/${ext}`,
+      fileBuffer: buffer
     })
 
-    return await newIns.save()
+    return (kycRecord[key] = fileHandler._id)
+  })
+
+  await Promise.all(jobs)
+
+  // calculate token expired date from 'expires_in'
+  const expiredDate = new Date(Date.now() + kycToken.expires_in * 1000)
+  kycRecord.bpToken = {
+    ...kycToken,
+    expires_at: expiredDate
+  }
+  kycRecord.rootHash = rootHash
+  kycRecord.smartContractId = smartContractId
+  kycRecord.isSynching = isSynching
+
+  return await kycRecord.save()
 }
 
-//-------------------------------------------------------------------------
-async function updateKyc({
-    kycRecord,
-    kycProfile,
-    kycToken,
-    userRawData
+// -------------------------------------------------------------------------
+async function queryKycStatus ({ kycRecord }) {
+  const status = kycRecord.status
+
+  return {
+    status,
+    message: '',
+    createdDate: new Date(),
+    identities: [],
+    certificates: []
+  }
+}
+
+async function needRecheckExistingKyc ({ kycProfile, kycRecord, payload }) {
+  if (!kycRecord.phone) {
+    return {
+      ...payload,
+      nextAction: 'upload',
+      requiredFields: ['phone']
+    }
+  }
+
+  return payload
+}
+
+// -------------------------------------------------------------------------
+async function generateSsoPayload ({
+  kycProfile,
+  kycRecord,
+  kycToken,
+  payload
 }) {
-    const { id, smartContractId, rootHash, isSynching } = kycProfile;
-
-    const jobs = Object.keys(userRawData).map(async (key) => {
-        const metaData = userRawData[key];
-
-        if (metaData.type == 'string')
-            return kycRecord[key] = metaData.value
-
-        const { buffer, originalname } = metaData;
-        const ext = originalname.split('.')[1];
-        const fileName = `${id}_${key}.${ext}`;
-        const fileHandler = await FileStorage.writeFile({
-            fileName,
-            mimetype: `image/${ext}`,
-            fileBuffer: buffer
-        })
-
-        return kycRecord[key] = fileHandler._id
-    })
-
-    const waitingJob = await Promise.all(jobs);
-
-    // calculate token expired date from 'expires_in'
-    const expiredDate = new Date(Date.now() + kycToken.expires_in * 1000)
-    kycRecord.bpToken = {
-        ...kycToken,
-        expires_at: expiredDate
-    }
-    kycRecord.rootHash = rootHash
-    kycRecord.smartContractId = smartContractId
-    kycRecord.isSynching = isSynching
-
-    return await kycRecord.save()
+  return {
+    _id: kycRecord._id
+  }
 }
 
-//-------------------------------------------------------------------------
-async function queryKycStatus({ kycRecord }) {
-    const status = kycRecord.status
+function createIns ({ find, create, update, reCheck, query, ssoPayload } = {}) {
+  return new ServerSdk({
+    baseUrl: FAKE_BASEURL,
+    clientId: FAKE_CLIENTID,
+    secretId: FAKE_SECRETID,
+    requiredFields: REQUIRED_FIELDS,
+    optionalFields: OPTIONAL_FIELDS,
+    certs: OPTIONAL_CERTS,
 
-    return {
-        status,
-        message: '',
-        createdDate: new Date(),
-        identities: [],
-        certificates: []
-    }
+    // Custom implement
+    findKycById: findKycById || find,
+    createKyc: createKyc || create,
+    updateKyc: updateKyc || update,
+    queryKycStatus: queryKycStatus || query,
+    needRecheckExistingKyc: needRecheckExistingKyc || reCheck,
+    generateSsoPayload: generateSsoPayload || ssoPayload
+  })
 }
 
-async function needRecheckExistingKyc({ kycProfile, kycRecord, payload }) {
+describe('validate', () => {
+  beforeEach(() => {
+    KYCModel.reset()
+  })
 
-    if (!(kycRecord.phone))
-        return {
-            ...payload,
-            nextAction: 'upload',
-            requiredFields: ['phone']
-        }
+  it('validate proof of path', async () => {
+    const kycId = '5addc3a70476a51e3c3f4290'
 
-    return payload;
-}
-
-//-------------------------------------------------------------------------
-async function generateSsoPayload({ kycProfile, kycRecord, kycToken, payload }) {
-    return {
-        _id: kycRecord._id,
-    }
-}
-
-
-function createIns({ find, create, update, reCheck, query, ssoPayload } = {}) {
-    return new ServerSdk({
-        baseUrl: FAKE_BASEURL,
-        clientId: FAKE_CLIENTID,
-        secretId: FAKE_SECRETID,
-        requiredFields: REQUIRED_FIELDS,
-        optionalFields: OPTIONAL_FIELDS,
-        certs: OPTIONAL_CERTS,
-
-        // Custom implement
-        findKycById: findKycById || find,
-        createKyc: createKyc || create,
-        updateKyc: updateKyc || update,
-        queryKycStatus: queryKycStatus || query,
-        needRecheckExistingKyc: needRecheckExistingKyc || reCheck,
-        generateSsoPayload: generateSsoPayload || ssoPayload
-    })
-}
-
-describe("validate", () => {
-
-    beforeEach(() => {
-        KYCModel.reset();
+    blockpassApiMock.mockQueryProofOfPath(FAKE_BASEURL, {
+      status: 'success',
+      proofList: PROOF_LIST
     })
 
-    it("validate proof of path", async () => {
-        const kycId = '5addc3a70476a51e3c3f4290';
+    const ins = createIns()
 
-        blockpassApiMock.mockQueryProofOfPath(FAKE_BASEURL, {
-            status: 'success',
-            proofList: PROOF_LIST
-        });
+    const kycRecord = await KYCModel.findById(kycId)
 
-        const ins = createIns();
-
-        const kycRecord = await KYCModel.findById(kycId)
-
-        // Query proof path
-        const step1 = await ins.queryProofOfPath({
-            kycToken: kycRecord.bpToken,
-            slugList: ['phone']
-        })
-        const {proofOfPath, bpToken} = step1;
-
-        // Check-again with root hash
-        const validateRes = ins.merkleProofCheckSingle(kycRecord.rootHash, kycRecord.phone, proofOfPath.proofList['phone'])
-
-        expect(validateRes).toEqual(true);
-
-        blockpassApiMock.checkPending();
-        blockpassApiMock.clearAll();
+    // Query proof path
+    const step1 = await ins.queryProofOfPath({
+      kycToken: kycRecord.bpToken,
+      slugList: ['phone']
     })
+    const { proofOfPath } = step1
 
-    it("validate proof of path and accessToken refresh", async () => {
-        const kycId = '5ad967142219d02223ae44b3';
+    // Check-again with root hash
+    const validateRes = ins.merkleProofCheckSingle(
+      kycRecord.rootHash,
+      kycRecord.phone,
+      proofOfPath.proofList['phone']
+    )
 
-        blockpassApiMock.mockQueryProofOfPath(FAKE_BASEURL, {
-            status: 'success',
-            proofList: PROOF_LIST
-        });
-        blockpassApiMock.mockQueryRefreshToken(FAKE_BASEURL)
+    expect(validateRes).toEqual(true)
 
-        const ins = createIns();
+    blockpassApiMock.checkPending()
+    blockpassApiMock.clearAll()
+  })
 
-        const kycRecord = await KYCModel.findById(kycId)
+  it('validate proof of path and accessToken refresh', async () => {
+    const kycId = '5ad967142219d02223ae44b3'
 
-        // Query proof path
-        const step1 = await ins.queryProofOfPath({
-            kycToken: kycRecord.bpToken,
-            slugList: ['phone']
-        })
-        const {proofOfPath, bpToken} = step1;
-
-        expect(proofOfPath).not.toBeNull();
-        expect(bpToken).not.toBeNull();
-
-        blockpassApiMock.checkPending();
-        blockpassApiMock.clearAll();
+    blockpassApiMock.mockQueryProofOfPath(FAKE_BASEURL, {
+      status: 'success',
+      proofList: PROOF_LIST
     })
+    blockpassApiMock.mockQueryRefreshToken(FAKE_BASEURL)
 
-});
+    const ins = createIns()
+
+    const kycRecord = await KYCModel.findById(kycId)
+
+    // Query proof path
+    const step1 = await ins.queryProofOfPath({
+      kycToken: kycRecord.bpToken,
+      slugList: ['phone']
+    })
+    const { proofOfPath, bpToken } = step1
+
+    expect(proofOfPath).not.toBeNull()
+    expect(bpToken).not.toBeNull()
+
+    blockpassApiMock.checkPending()
+    blockpassApiMock.clearAll()
+  })
+})

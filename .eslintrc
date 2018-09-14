@@ -1,19 +1,13 @@
 {
   "parser": "babel-eslint",
-  "extends": [
-    "airbnb-base",
-    "plugin:flowtype/recommended",
-    "plugin:prettier/recommended",
-    "prettier/flowtype"
-  ],
-  "plugins": [
-    "flowtype",
-    "flowtype-errors"
-  ],
+  "extends": ["standard", "plugin:flowtype/recommended", "prettier/flowtype"],
+  "plugins": ["flowtype", "flowtype-errors"],
   "env": {
     "jest": true
   },
   "rules": {
-    "flowtype-errors/show-errors": "error"
+    "flowtype-errors/show-errors": "error",
+    "no-underscore-dangle": "off",
+    "no-return-await": "off"
   }
 }

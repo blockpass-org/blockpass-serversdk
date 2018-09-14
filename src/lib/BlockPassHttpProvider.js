@@ -1,40 +1,44 @@
-const request = require("superagent");
-const api = require("./config").api;
+const request = require('superagent')
+const api = require('./config').api
 
 class BlockpassHttpProvider {
-  constructor(options) {
-    const { baseUrl, clientId, secretId } = options || {};
-    if (!baseUrl || !clientId || !secretId)
+  constructor (options) {
+    const { baseUrl, clientId, secretId } = options || {}
+    if (!baseUrl || !clientId || !secretId) {
       throw new Error(
-        "Missing argument. Must have fields: baseUrl, clientId, secretId"
-      );
-    this._baseUrl = baseUrl;
-    this._clientId = clientId;
-    this._secretId = secretId;
+        'Missing argument. Must have fields: baseUrl, clientId, secretId'
+      )
+    }
+    this._baseUrl = baseUrl
+    this._clientId = clientId
+    this._secretId = secretId
   }
 
-  async queryServiceMetadata() {
+  async queryServiceMetadata () {
     try {
-      const { _clientId, _secretId, _baseUrl } = this;
+      const { _baseUrl } = this
 
-      const metaDataResponse = await request
-        .get(_baseUrl + api.META_DATA_PATH + this._clientId)
+      const metaDataResponse = await request.get(
+        _baseUrl + api.META_DATA_PATH + this._clientId
+      )
 
       if (metaDataResponse.status !== 200) {
-        console.error("[BlockPass] queryServiceMetadata Error", metaDataResponse.text);
-        return null;
+        console.error(
+          '[BlockPass] queryServiceMetadata Error',
+          metaDataResponse.text
+        )
+        return null
       }
 
       return metaDataResponse.body
-
     } catch (error) {
-      console.error("queryServiceMetadata failed: ", error);
-      return null;
+      console.error('queryServiceMetadata failed: ', error)
+      return null
     }
   }
-  async doHandShake(code, session_code) {
+  async doHandShake (code, sessionCode) {
     try {
-      const { _clientId, _secretId, _baseUrl } = this;
+      const { _clientId, _secretId, _baseUrl } = this
 
       const handShakeResponse = await request
         .post(_baseUrl + api.HAND_SHAKE_PATH)
@@ -42,51 +46,51 @@ class BlockpassHttpProvider {
           client_id: _clientId,
           client_secret: _secretId,
           code,
-          grant_type: "authoriaztioncode",
-          session_code
-        });
+          grant_type: 'authoriaztioncode',
+          session_code: sessionCode
+        })
 
-      if (handShakeResponse.status != 200) {
-        console.error("[BlockPass] Handshake Error", handShakeResponse.text);
-        return null;
+      if (handShakeResponse.status !== 200) {
+        console.error('[BlockPass] Handshake Error', handShakeResponse.text)
+        return null
       }
 
-      return handShakeResponse.body;
+      return handShakeResponse.body
     } catch (error) {
-      console.error("Handshake failed: ", error);
-      return null;
+      console.error('Handshake failed: ', error)
+      return null
     }
   }
 
-  async doMatchingData(handShakeToken) {
+  async doMatchingData (handShakeToken) {
     try {
-      const { _clientId, _secretId, _baseUrl } = this;
+      const { _baseUrl } = this
 
       const userProfileResponse = await request
         .post(_baseUrl + api.MATCHING_INFO_PATH)
         .set({
           Authorization: handShakeToken.access_token
         })
-        .send();
+        .send()
 
-      if (userProfileResponse.status != 200) {
+      if (userProfileResponse.status !== 200) {
         console.error(
-          "[BlockPass] UserProfile Response Error",
+          '[BlockPass] UserProfile Response Error',
           userProfileResponse.text
-        );
-        return null;
+        )
+        return null
       }
 
-      return userProfileResponse.body;
+      return userProfileResponse.body
     } catch (error) {
-      console.error("Query Profile failed: ", error);
-      return null;
+      console.error('Query Profile failed: ', error)
+      return null
     }
   }
 
-  async notifyLoginComplete(bpToken, sessionData, extraData) {
+  async notifyLoginComplete (bpToken, sessionData, extraData) {
     try {
-      const { _clientId, _secretId, _baseUrl } = this;
+      const { _baseUrl } = this
 
       const ssoCompleteResponse = await request
         .post(_baseUrl + api.SSO_COMPETE_PATH)
@@ -94,31 +98,28 @@ class BlockpassHttpProvider {
           Authorization: bpToken.access_token
         })
         .send({
-          result: "success",
+          result: 'success',
           custom_data: JSON.stringify({
             sessionData,
             extraData
           })
-        });
+        })
 
-      if (ssoCompleteResponse.status != 200) {
-        console.error(
-          "[BlockPass] SSoComplete Error",
-          ssoCompleteResponse.text
-        );
-        return null;
+      if (ssoCompleteResponse.status !== 200) {
+        console.error('[BlockPass] SSoComplete Error', ssoCompleteResponse.text)
+        return null
       }
 
-      return ssoCompleteResponse.body;
+      return ssoCompleteResponse.body
     } catch (error) {
-      console.error("notifyLoginComplete failed: ", error);
-      return null;
+      console.error('notifyLoginComplete failed: ', error)
+      return null
     }
   }
 
-  async notifyLoginFailed(bpToken, error) {
+  async notifyLoginFailed (bpToken, error) {
     try {
-      const { _clientId, _secretId, _baseUrl } = this;
+      const { _baseUrl } = this
 
       const ssoCompleteResponse = await request
         .post(_baseUrl + api.SSO_COMPETE_PATH)
@@ -126,63 +127,54 @@ class BlockpassHttpProvider {
           Authorization: bpToken.access_token
         })
         .send({
-          result: "failed",
-          custom_data: JSON.stringify({
-            sessionData,
-            extraData
-          })
-        });
+          result: 'failed',
+          custom_data: JSON.stringify({})
+        })
 
-      if (ssoCompleteResponse.status != 200) {
-        console.error(
-          "[BlockPass] SSoComplete Error",
-          ssoCompleteResponse.text
-        );
-        return null;
+      if (ssoCompleteResponse.status !== 200) {
+        console.error('[BlockPass] SSoComplete Error', ssoCompleteResponse.text)
+        return null
       }
 
-      return ssoCompleteResponse.body;
+      return ssoCompleteResponse.body
     } catch (error) {
-      console.error("notifyLoginComplete failed: ", error);
-      return null;
+      console.error('notifyLoginComplete failed: ', error)
+      return null
     }
   }
 
-  async _checkAndRefreshAccessToken(bpToken) {
+  async _checkAndRefreshAccessToken (bpToken) {
     try {
-      const { _clientId, _secretId, _baseUrl } = this;
+      const { _secretId, _baseUrl } = this
 
-      const now = new Date();
-      if (bpToken.expires_at && bpToken.expires_at > now) return bpToken;
+      const now = new Date()
+      if (bpToken.expires_at && bpToken.expires_at > now) return bpToken
 
-      const { access_token, refresh_token } = bpToken;
+      const { access_token: accessToken, refresh_token: refreshToken } = bpToken
       const refreshTokenResponse = await request
         .post(_baseUrl + api.REFRESH_TOKEN_PATH)
         .send({
-          stoc: access_token,
-          stoc_refresh: refresh_token,
+          stoc: accessToken,
+          stoc_refresh: refreshToken,
           client_secret: _secretId
-        });
+        })
 
-      if (refreshTokenResponse.status != 200) {
-        console.error(
-          "[BlockPass] Refreshkyc Error",
-          refreshTokenResponse.text
-        );
-        return null;
+      if (refreshTokenResponse.status !== 200) {
+        console.error('[BlockPass] Refreshkyc Error', refreshTokenResponse.text)
+        return null
       }
 
-      return refreshTokenResponse.body;
+      return refreshTokenResponse.body
     } catch (error) {
-      console.error("_checkAndRefreshAccessToken failed: ", error);
-      return null;
+      console.error('_checkAndRefreshAccessToken failed: ', error)
+      return null
     }
   }
 
-  async queryProofOfPath(bpToken, slug_list) {
+  async queryProofOfPath (bpToken, slugList) {
     // check refresh bpToken
-    bpToken = await this._checkAndRefreshAccessToken(bpToken);
-    const { _clientId, _secretId, _baseUrl } = this;
+    bpToken = await this._checkAndRefreshAccessToken(bpToken)
+    const { _baseUrl } = this
 
     try {
       const ssoQueryPathResponse = await request
@@ -191,30 +183,30 @@ class BlockpassHttpProvider {
           Authorization: bpToken.access_token
         })
         .send({
-          slug_list
-        });
+          slug_list: slugList
+        })
 
-      if (ssoQueryPathResponse.status != 200) {
+      if (ssoQueryPathResponse.status !== 200) {
         console.log(
-          "[BlockPass] queryProofOfPath Error",
+          '[BlockPass] queryProofOfPath Error',
           ssoQueryPathResponse.text
-        );
-        return null;
+        )
+        return null
       }
 
       return {
         proofOfPath: ssoQueryPathResponse.body,
         bpToken
-      };
+      }
     } catch (error) {
-      console.error(error);
-      return null;
+      console.error(error)
+      return null
     }
   }
-  async notifyUser(bpToken, msg, title = 'Information') {
+  async notifyUser (bpToken, msg, title = 'Information') {
     // check refresh bpToken
-    bpToken = await this._checkAndRefreshAccessToken(bpToken);
-    const { _clientId, _secretId, _baseUrl } = this;
+    bpToken = await this._checkAndRefreshAccessToken(bpToken)
+    const { _baseUrl } = this
 
     try {
       const putCertResponse = await request
@@ -228,25 +220,22 @@ class BlockpassHttpProvider {
             title,
             mssg: msg
           }
-        });
+        })
 
-      if (putCertResponse.status != 200) {
-        console.log(
-          "[BlockPass] notifyUser Error",
-          putCertResponse.text
-        );
-        return null;
+      if (putCertResponse.status !== 200) {
+        console.log('[BlockPass] notifyUser Error', putCertResponse.text)
+        return null
       }
 
       return {
         res: putCertResponse.body,
         bpToken
-      };
+      }
     } catch (error) {
-      console.error(error);
-      return null;
+      console.error(error)
+      return null
     }
   }
 }
 
-module.exports = BlockpassHttpProvider;
+module.exports = BlockpassHttpProvider
