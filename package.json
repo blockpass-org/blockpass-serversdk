@@ -1,21 +1,19 @@
 {
   "name": "bp-sdk-server",
-  "version": "1.2.1",
+  "version": "1.4.0",
   "description": "Blockpass Sdk server",
   "license": "MIT",
   "repository": "https://github.com/blockpass-org/blockpass-serversdk",
   "homepage": "https://blockpass.org/",
   "main": "dist/node/index.js",
-  "module": "dist/es6/index.js",  
+  "module": "dist/es6/index.js",
   "author": {
     "name": "Blockpass"
   },
   "engines": {
     "node": ">=6"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "test": "jest",
     "coverage": "npm test -- --coverage",
@@ -24,7 +22,8 @@
     "flow": "flow check",
     "docs": "documentation build src -f md -o doc/api.md",
     "clean": "rimraf dist",
-    "flowbuild": "flow-copy-source src dist/node && flow-remove-types src/ --out-dir dist/es6",
+    "flowbuild":
+      "flow-copy-source src dist/node && flow-remove-types src/ --out-dir dist/es6",
     "prebuild": "npm run docs && npm run clean && npm run flowbuild",
     "build": "babel src -d dist/node",
     "watch": "npm-watch",
@@ -41,9 +40,7 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "collectCoverageFrom": [
-      "src/**"
-    ]
+    "collectCoverageFrom": ["src/**"]
   },
   "dependencies": {
     "jsonwebtoken": "^8.2.1",
@@ -58,13 +55,16 @@
     "babel-preset-flow": "^6.23.0",
     "babel-preset-stage-2": "^6.24.1",
     "documentation": "^6.1.0",
-    "eslint": "^4.19.1",
-    "eslint-config-airbnb-base": "^12.1.0",
-    "eslint-config-prettier": "^2.9.0",
+    "eslint": "^5.5.0",
+    "eslint-config-standard": "^12.0.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-node": "^7.0.1",
+    "eslint-plugin-promise": "^4.0.1",
+    "eslint-plugin-standard": "^4.0.0",
     "eslint-plugin-flowtype": "^2.46.1",
     "eslint-plugin-flowtype-errors": "^3.5.1",
-    "eslint-plugin-import": "^2.10.0",
     "eslint-plugin-prettier": "^2.6.0",
+    "eslint-config-prettier": "^2.9.0",
     "faker": "^4.1.0",
     "flow-bin": "^0.69.0",
     "flow-copy-source": "^1.3.0",

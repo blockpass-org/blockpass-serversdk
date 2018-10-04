@@ -1,4 +1,4 @@
 //      
-const ServerSdk = require("./lib/ServerSdk");
+const ServerSdk = require('./lib/ServerSdk')
 
-module.exports = ServerSdk;
+module.exports = ServerSdk

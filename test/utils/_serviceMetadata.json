@@ -1,0 +1,73 @@
+{
+  "status": "success",
+  "data": {
+    "clientId": "developer_service",
+    "tags": [],
+    "identities": [
+      {
+        "_id": "593f6c1b8d8ea62172a081f3",
+        "cat": "info",
+        "slug": "address",
+        "name": "Address"
+      },
+      {
+        "_id": "593f6c1b8d8ea62172a081f4",
+        "cat": "info",
+        "slug": "dob",
+        "name": "Date of birth"
+      },
+      {
+        "_id": "593f6c1b8d8ea62172a081f9",
+        "cat": "info",
+        "slug": "email",
+        "name": "Email"
+      },
+      {
+        "_id": "593f6c1b8d8ea62172a081f1",
+        "cat": "info",
+        "slug": "family_name",
+        "name": "Family Name"
+      },
+      {
+        "_id": "593f6c1b8d8ea62172a081f2",
+        "cat": "info",
+        "slug": "given_name",
+        "name": "Given Name"
+      },
+      {
+        "_id": "593f6c1b8d8ea62172a081f6",
+        "cat": "file",
+        "slug": "passport",
+        "name": "Passport"
+      },
+      {
+        "_id": "593f6c1b8d8ea62172a081f5",
+        "cat": "info",
+        "slug": "phone",
+        "name": "Phone number"
+      },
+      {
+        "_id": "593f6c1b8d8ea62172a081f8",
+        "cat": "file",
+        "slug": "proof_of_address",
+        "name": "Proof of address"
+      },
+      {
+        "_id": "593f6c1b8d8ea62172a081f7",
+        "cat": "file",
+        "slug": "selfie",
+        "name": "Selfie"
+      }
+    ],
+    "certRequirement": [
+      "demo-service-cert",
+      "onfido-service-cert",
+      "complyadvantage-service-cert",
+      "foundation-service-cert"
+    ],
+    "certificate": [
+      "https://sandbox-api.blockpass.org/api/schema/demo-service-cert",
+      "https://sandbox-api.blockpass.org/api/schema/foundation-service-cert"
+    ]
+  }
+}

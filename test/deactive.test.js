@@ -122,59 +122,51 @@ function createIns ({ find, create, update, reCheck, query, ssoPayload } = {}) {
   })
 }
 
-describe('login', () => {
+describe('deactive', () => {
   beforeEach(() => {
     KYCModel.reset()
   })
 
-  test('[not-found] query-kyc', async () => {
-    const bpFakeUserId = Date.now().toString()
+  test('deactive user', async () => {
+    const kycId = '5addc3a70476a51e3c3f4291'
 
-    // Mock API
-    blockpassApiMock.mockHandShake(FAKE_BASEURL, bpFakeUserId)
-    blockpassApiMock.mockMatchingData(FAKE_BASEURL, bpFakeUserId, null, 1)
+    blockpassApiMock.mockDeactiveUser(FAKE_BASEURL, {
+      status: 'success'
+    })
 
     const ins = createIns()
 
-    const step1 = await ins.queryStatusFlow({ code: bpFakeUserId })
+    const kycRecord = await KYCModel.findById(kycId)
 
-    expect(step1.status).toEqual('notFound')
+    // Send notice
+    const noticeRes = await ins.deactivateUser({
+      bpToken: kycRecord.bpToken
+    })
+
+    expect(noticeRes.res.status).toEqual('success')
 
     blockpassApiMock.checkPending()
     blockpassApiMock.clearAll()
   })
 
-  test('[found] query-kyc', async () => {
-    const bpFakeUserId = '5ad862240a176722f25fede3'
+  test('deactive user and accessToken refresh', async () => {
+    const kycId = '5ad967142219d02223ae44b3'
 
-    // Mock API
-    blockpassApiMock.mockHandShake(FAKE_BASEURL, bpFakeUserId)
-    blockpassApiMock.mockMatchingData(FAKE_BASEURL, bpFakeUserId, null, 1)
-
-    const ins = createIns()
-
-    const step1 = await ins.queryStatusFlow({ code: bpFakeUserId })
-
-    expect(step1.status).toEqual('waiting')
-
-    blockpassApiMock.checkPending()
-    blockpassApiMock.clearAll()
-  })
-
-  test('[found][sso] query-kyc', async () => {
-    const bpFakeUserId = '5ad862240a176722f25fede3'
-    const sessionCode = '1'
-
-    // Mock API
-    blockpassApiMock.mockHandShake(FAKE_BASEURL, bpFakeUserId)
-    blockpassApiMock.mockMatchingData(FAKE_BASEURL, bpFakeUserId, null, 1)
-    blockpassApiMock.mockSSoComplete(FAKE_BASEURL)
+    blockpassApiMock.mockDeactiveUser(FAKE_BASEURL, {
+      status: 'success'
+    })
+    blockpassApiMock.mockQueryRefreshToken(FAKE_BASEURL)
 
     const ins = createIns()
 
-    const step1 = await ins.queryStatusFlow({ code: bpFakeUserId, sessionCode })
+    const kycRecord = await KYCModel.findById(kycId)
 
-    expect(step1.status).toEqual('waiting')
+    // Send notice
+    const noticeRes = await ins.deactivateUser({
+      bpToken: kycRecord.bpToken
+    })
+
+    expect(noticeRes.res.status).toEqual('success')
 
     blockpassApiMock.checkPending()
     blockpassApiMock.clearAll()
