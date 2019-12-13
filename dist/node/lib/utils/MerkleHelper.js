@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 const crypto = require('crypto');
 
@@ -7,20 +7,22 @@ function _hash(value) {
 }
 
 module.exports.hash = _hash;
+
 module.exports.validateField = function validateField(rootHash, fieldRawData, proofPath) {
   const rawHash = _hash(fieldRawData);
+
   const beginHash = _hash(rawHash + rawHash);
 
   const root = proofPath.reduce((acc, item, index) => {
     if (acc === item.left) {
       return _hash(acc + item.right);
     }
+
     if (acc === item.right) {
       return _hash(item.left + acc);
     }
 
     return `wrong at ${index}`;
   }, beginHash);
-
   return root === rootHash;
 };
