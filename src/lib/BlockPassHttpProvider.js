@@ -345,6 +345,94 @@ class BlockpassHttpProvider {
       return null
     }
   }
+
+  async fetchCertPromise (bpToken) {
+    // check refresh bpToken
+    bpToken = await this._checkAndRefreshAccessToken(bpToken)
+    const { _baseUrl } = this
+
+    try {
+      const certPromiseResponse = await request
+        .get(_baseUrl + api.FETCH_CERT_PROMISE_PATH)
+        .set({
+          Authorization: bpToken.access_token
+        })
+
+      if (certPromiseResponse.status !== 200) {
+        console.log(
+          '[BlockPass] fetchCertPromise Error',
+          certPromiseResponse.text
+        )
+        return null
+      }
+
+      return {
+        res: certPromiseResponse.body,
+        bpToken
+      }
+    } catch (error) {
+      console.error(error)
+      return null
+    }
+  }
+
+  async pullCertPromise (bpToken, certPromiseId) {
+    // check refresh bpToken
+    bpToken = await this._checkAndRefreshAccessToken(bpToken)
+    const { _baseUrl } = this
+
+    try {
+      const certPromiseResponse = await request
+        .get(_baseUrl + api.PULL_CERT_PROMISE_PATH + '/' + certPromiseId)
+        .set({
+          Authorization: bpToken.access_token
+        })
+
+      if (certPromiseResponse.status !== 200) {
+        console.log(
+          '[BlockPass] pullCertPromise Error',
+          certPromiseResponse.text
+        )
+        return null
+      }
+
+      return {
+        res: certPromiseResponse.body,
+        bpToken
+      }
+    } catch (error) {
+      console.error(error)
+      return null
+    }
+  }
+
+  async checkCertificateHash ({ bpToken, certHash }) {
+    // check refresh bpToken
+    bpToken = await this._checkAndRefreshAccessToken(bpToken)
+    const { _baseUrl } = this
+    try {
+      const certHashResponse = await request
+        .get(_baseUrl + api.CHECK_CERT_HASH_PATH + '/' + certHash)
+        .set({
+          Authorization: bpToken.access_token
+        })
+      if (certHashResponse.status !== 200) {
+        console.log(
+          '[BlockPass] checkCertificateHash Error',
+          certHashResponse.text
+        )
+        return null
+      }
+
+      return {
+        res: certHashResponse.body,
+        bpToken
+      }
+    } catch (error) {
+      console.error(error)
+      throw error
+    }
+  }
 }
 
 module.exports = BlockpassHttpProvider

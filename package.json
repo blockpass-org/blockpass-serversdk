@@ -13,7 +13,9 @@
   "engines": {
     "node": ">=6"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "test": "jest",
     "coverage": "npm test -- --coverage",
@@ -22,8 +24,7 @@
     "flow": "flow check",
     "docs": "documentation build src -f md -o doc/api.md",
     "clean": "rimraf dist",
-    "flowbuild":
-      "flow-copy-source src dist/node && flow-remove-types src/ --out-dir dist/es6",
+    "flowbuild": "flow-copy-source src dist/node && flow-remove-types src/ --out-dir dist/es6",
     "prebuild": "npm run docs && npm run clean && npm run flowbuild",
     "build": "babel src -d dist/node",
     "watch": "npm-watch",
@@ -40,40 +41,43 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "collectCoverageFrom": ["src/**"]
+    "collectCoverageFrom": [
+      "src/**"
+    ]
   },
   "dependencies": {
     "jsonwebtoken": "^8.2.1",
+    "lodash": "^4.17.15",
     "superagent": "^3.8.2"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.0",
-    "babel-eslint": "^8.2.2",
-    "babel-jest": "^22.4.3",
-    "babel-preset-env": "^1.6.1",
-    "babel-preset-flow": "^6.23.0",
-    "babel-preset-stage-2": "^6.24.1",
-    "documentation": "^6.1.0",
+    "@babel/cli": "^7.7.0",
+    "@babel/core": "^7.4.5",
+    "@babel/plugin-transform-runtime": "^7.4.4",
+    "@babel/preset-env": "^7.4.5",
+    "@babel/preset-flow": "^7.7.4",
+    "@babel/preset-react": "^7.0.0",
+    "@babel/register": "^7.4.4",
+    "@babel/runtime": "^7.4.5",
+    "documentation": "^12.1.4",
     "eslint": "^5.5.0",
+    "eslint-config-prettier": "^6.7.0",
     "eslint-config-standard": "^12.0.0",
-    "eslint-plugin-import": "^2.14.0",
-    "eslint-plugin-node": "^7.0.1",
-    "eslint-plugin-promise": "^4.0.1",
-    "eslint-plugin-standard": "^4.0.0",
     "eslint-plugin-flowtype": "^2.46.1",
     "eslint-plugin-flowtype-errors": "^3.5.1",
-    "eslint-plugin-prettier": "^2.6.0",
-    "eslint-config-prettier": "^2.9.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-node": "^7.0.1",
+    "eslint-plugin-prettier": "^3.1.1",
+    "eslint-plugin-promise": "^4.0.1",
+    "eslint-plugin-standard": "^4.0.0",
     "faker": "^4.1.0",
-    "flow-bin": "^0.69.0",
+    "flow-bin": "^0.113.0",
     "flow-copy-source": "^1.3.0",
     "flow-remove-types": "^1.2.3",
-    "jest-cli": "^22.4.3",
+    "jest-cli": "^25.0.0",
     "nock": "^9.2.5",
     "npm-watch": "^0.3.0",
     "opn-cli": "^3.1.0",
-    "prettier": "^1.11.1",
     "rimraf": "^2.6.2"
   }
 }

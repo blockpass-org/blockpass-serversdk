@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 const ServerSdk = require('./lib/ServerSdk');
 

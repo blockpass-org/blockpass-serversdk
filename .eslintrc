@@ -9,6 +9,7 @@
     "flowtype-errors/show-errors": "error",
     "no-underscore-dangle": "off",
     "no-return-await": "off",
-    "camelcase": "warn"
+    "camelcase": "warn",
+    "quotes": ["error", "single"]
   }
 }

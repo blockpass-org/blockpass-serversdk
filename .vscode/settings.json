@@ -1,0 +1,12 @@
+{
+  "prettier.arrowParens": "always",
+  "eslint.alwaysShowStatus": true,
+  "eslint.autoFixOnSave": true,
+  "eslint.lintTask.enable": true,
+  "eslint.run": "onSave",
+  "prettier.trailingComma": "es5",
+  "prettier.semi": false,
+  "prettier.singleQuote": true,
+  "prettier.bracketSpacing": true,
+  "eslint.workingDirectories": ["./", "./example/express"]
+}

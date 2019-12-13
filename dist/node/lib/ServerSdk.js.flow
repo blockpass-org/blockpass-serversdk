@@ -10,12 +10,15 @@ import type {
   ReSubmitCheckHandler,
   GenerateSsoPayloadHandler,
   GenerateRedirectPayloadHandler,
-  ConstructorParams
+  ConstructorParams,
+  KycToken,
+  CertPromiseResponse
 } from './flowTypes.js'
 
 const EventEmitter = require('events')
 const BlockPassHttpProvider = require('./BlockPassHttpProvider')
 const jwt = require('jsonwebtoken')
+const { get } = require('lodash')
 
 /**
  * @class Class ServerSdk
@@ -35,6 +38,7 @@ class ServerSdk extends EventEmitter {
   certs: [string]
   secretId: string
   clientId: string
+  allowCertPromise: Boolean
   encodeSessionData: ?(payload: any) => string
   decodeSessionData: ?(token: string) => ?Object
   debug: boolean
@@ -145,8 +149,9 @@ class ServerSdk extends EventEmitter {
     }
 
     this.serviceMetaData = serviceMetaData.data
-    this.requiredFields = this.serviceMetaData.identities.map(itm => itm.slug)
+    this.requiredFields = this.serviceMetaData.identities.map((itm) => itm.slug)
     this.certs = this.serviceMetaData.certRequirement
+    this.allowCertPromise = !!this.serviceMetaData.allowCertPromise
 
     return this.emit('onLoaded')
   }
@@ -168,7 +173,7 @@ class ServerSdk extends EventEmitter {
   }: {
     code: string,
     sessionCode: string,
-    refId?: string
+    refId?: string,
   }): Promise<BlockpassMobileResponsePayload> {
     if (code == null || sessionCode == null) {
       throw new Error('Missing code or sessionCode')
@@ -225,7 +230,7 @@ class ServerSdk extends EventEmitter {
   }: {
     accessToken: string,
     slugList: [string],
-    userRawData: RawDataUploadDataRequest
+    userRawData: RawDataUploadDataRequest,
   }): Promise<BlockpassMobileResponsePayload> {
     if (!slugList) throw new Error('Missing slugList')
 
@@ -319,7 +324,7 @@ class ServerSdk extends EventEmitter {
     refId
   }: {
     code: string,
-    refId?: string
+    refId?: string,
   }): Promise<BlockpassMobileResponsePayload> {
     if (code == null) throw new Error('Missing code or sessionCode')
 
@@ -367,7 +372,7 @@ class ServerSdk extends EventEmitter {
     sessionCode
   }: {
     code: string,
-    sessionCode: ?string
+    sessionCode: ?string,
   }): Promise<MobileAppKycRecordStatus> {
     if (code == null) throw new Error('Missing code or sessionCode')
 
@@ -392,6 +397,7 @@ class ServerSdk extends EventEmitter {
     if (!kycRecord) {
       return {
         status: 'notFound',
+        allowCertPromise: this.allowCertPromise,
         ...this._serviceRequirement()
       }
     }
@@ -446,7 +452,7 @@ class ServerSdk extends EventEmitter {
   }: {
     code: string,
     fieldList: [string],
-    certList: [string]
+    certList: [string],
   }) {
     if (code == null) throw new Error('Missing code')
     if (!fieldList || !certList) {
@@ -454,9 +460,9 @@ class ServerSdk extends EventEmitter {
     }
 
     const fieldCheck = fieldList.every(
-      itm => this.requiredFields.indexOf(itm) !== -1
+      (itm) => this.requiredFields.indexOf(itm) !== -1
     )
-    const cerCheck = certList.every(itm => this.certs.indexOf(itm) !== -1)
+    const cerCheck = certList.every((itm) => this.certs.indexOf(itm) !== -1)
     if (!fieldCheck || !cerCheck) {
       throw new Error('Invalid fieldList or certList name')
     }
@@ -521,7 +527,10 @@ class ServerSdk extends EventEmitter {
 
   // -----------------------------------------------------------------------------------
   /**
-   * Reject a given Certificate
+   * Send user notification
+   *  - IF user registerPN -> PN will send
+   *  - User will recieved message in their inbox
+   * @param {Object} params
    */
   async userNotify ({
     message,
@@ -532,7 +541,7 @@ class ServerSdk extends EventEmitter {
     message: string,
     action: string,
     bpToken: any,
-    type: 'info' | 'success' | 'warning'
+    type: 'info' | 'success' | 'warning',
   }) {
     const res = await this.blockPassProvider.notifyUser(
       bpToken,
@@ -546,10 +555,73 @@ class ServerSdk extends EventEmitter {
   // -----------------------------------------------------------------------------------
   /**
    * Deactivate connection with user
+   * @param {Object} params
    */
-  async deactivateUser ({ bpToken }: { bpToken: any }) {
+  async deactivateUser ({ bpToken }: { bpToken: KycToken }) {
     const res = await this.blockPassProvider.deactivateUser(bpToken)
     return res
+  }
+
+  // -----------------------------------------------------------------------------------
+  /**
+   * Check dose SHA256(CertificateRawString) still valid or not (revoked by issuer)
+   *
+   * @typedef {Object} Args
+   * @param {KycToken} Args.bpToken
+   * @param {String} Args.certHash
+   */
+  async checkCertificateHash ({
+    bpToken,
+    certHash
+  }: {
+    bpToken: KycToken,
+    certHash: string,
+  }) {
+    try {
+      const response = await this.blockPassProvider.checkCertificateHash({
+        bpToken,
+        certHash
+      })
+      if (response) {
+        const status = get(response, 'res.data.status')
+        return status !== 'invalid'
+      }
+    } catch (error) {
+      console.log('[ServerSDK] error in checkCertificateHash', error)
+      throw error
+    }
+  }
+
+  // -----------------------------------------------------------------------------------
+  /**
+   *  Fetch all certPromise and their status for record
+   *
+   */
+  async fetchCertPromise ({ bpToken }: { bpToken: KycToken }) {
+    const response = await this.blockPassProvider.fetchCertPromise(bpToken)
+    if (response) {
+      return response.res.data
+    }
+  }
+
+  /**
+   * Pull certPromise data
+   *
+   */
+  async pullCertPromise ({
+    bpToken,
+    certPromiseId
+  }: {
+    bpToken: KycToken,
+    certPromiseId: string,
+  }): Promise<CertPromiseResponse | void> {
+    const response = await this.blockPassProvider.pullCertPromise(
+      bpToken,
+      certPromiseId
+    )
+    if (response) {
+      return response.res.data
+    }
   }
 
   // -----------------------------------------------------------------------------------
@@ -578,12 +650,12 @@ class ServerSdk extends EventEmitter {
   _serviceRequirement (): Object {
     const { requiredFields, certs } = this
 
-    const identities = requiredFields.map(itm => ({
+    const identities = requiredFields.map((itm) => ({
       slug: itm,
       status: ''
     }))
 
-    const certificates = certs.map(itm => ({
+    const certificates = certs.map((itm) => ({
       slug: itm,
       status: ''
     }))

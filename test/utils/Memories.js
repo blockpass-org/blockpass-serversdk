@@ -3,7 +3,7 @@ const DB = require('./_mockData').KYCModel
 class KYCModel {
   constructor (props) {
     this._id = Date.now()
-    Object.keys(props).forEach(key => {
+    Object.keys(props).forEach((key) => {
       this[key] = props[key]
     })
   }
@@ -16,21 +16,19 @@ class KYCModel {
 
   static async findOne (query) {
     const { blockPassID } = query
-    return KYCModel.DB.find(val => val.blockPassID === blockPassID)
+    return KYCModel.DB.find((val) => val.blockPassID === blockPassID)
   }
 
   static async findById (id) {
-    return KYCModel.DB.find(val => val._id === id)
+    return KYCModel.DB.find((val) => val._id === id)
   }
 
   static reset () {
-    KYCModel.DB = DB.map(itm => new KYCModel(itm))
+    KYCModel.DB = DB.map((itm) => new KYCModel(itm))
   }
 }
 
 class FileStorage {
-  static Mem = {}
-
   static async writeFile ({ fileName, mimetype, fileBuffer }) {
     const _id = Date.now()
     FileStorage.Mem[_id] = { fileName, mimetype, fileBuffer }
@@ -39,6 +37,7 @@ class FileStorage {
     }
   }
 }
+FileStorage.Mem = {}
 
 module.exports.FileStorage = FileStorage
 module.exports.KYCModel = KYCModel

@@ -1,11 +1,6 @@
 {
   "presets": [
-    ["env", {
-      "targets": {
-        "node": "6"
-      }
-    }],
-    "stage-2",
-    "flow"
+    ["@babel/preset-env", { "targets": { "node": true } }],
+    "@babel/preset-flow"
   ]
 }
