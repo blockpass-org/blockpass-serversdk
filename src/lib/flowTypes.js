@@ -14,7 +14,7 @@ export type KycRecord = any
  */
 export type RawDataString = {
   type: 'string',
-  value: string
+  value: string,
 }
 
 /**
@@ -25,7 +25,7 @@ export type RawDataString = {
 export type RawDataFile = {
   type: 'file',
   buffer: Buffer,
-  originalName?: string
+  originalName?: string,
 }
 
 /**
@@ -61,7 +61,7 @@ export type SyncStatus = 'syncing' | 'complete'
 export type RecordFieldStatus = {
   slug: string,
   status: InvidualFieldStatus,
-  comment: string
+  comment: string,
 }
 
 /**
@@ -83,7 +83,7 @@ export type RecordFieldStatus = {
  * }
  */
 export type RawDataUploadDataRequest = {
-  [key: string]: RawDataFile | RawDataString
+  [key: string]: RawDataFile | RawDataString,
 }
 /**
  * --------------------------------------------------------
@@ -92,10 +92,11 @@ export type RawDataUploadDataRequest = {
  */
 export type MobileAppKycRecordStatus = {
   status: RecordStatus,
+  allowCertPromise?: Boolean,
   message?: string,
   createdDate?: Date,
   identities?: [RecordFieldStatus],
-  certificates?: [RecordFieldStatus]
+  certificates?: [RecordFieldStatus],
 }
 
 /**
@@ -107,7 +108,7 @@ export type KycProfile = {
   id: string,
   smartContractId: string,
   rootHash: string,
-  isSynching: SyncStatus
+  isSynching: SyncStatus,
 }
 
 /**
@@ -118,7 +119,7 @@ export type KycProfile = {
 export type KycToken = {
   access_token: string,
   expires_in: Number,
-  refresh_token: string
+  refresh_token: string,
 }
 
 /**
@@ -138,7 +139,7 @@ export type BlockpassMobileResponsePayload = {
   message?: string,
   accessToken?: string,
   requiredFields?: [string],
-  optionalFields?: [string]
+  optionalFields?: [string],
 }
 
 /**
@@ -158,9 +159,9 @@ export type FindKycByIdHandler = (kycId: string) => Promise<KycRecord>
  * @param {KycProfile} params.kycProfile
  * @returns {Promise<KycRecord>}
  */
-export type CreateKycHandler = ({ kycProfile: KycProfile }) => Promise<
-  KycRecord
->
+export type CreateKycHandler = ({
+  kycProfile: KycProfile,
+}) => Promise<KycRecord>
 
 /**
  * --------------------------------------------------------
@@ -177,7 +178,7 @@ export type UpdateKycHandler = ({
   kycProfile: KycProfile,
   kycRecord: KycRecord,
   kycToken: KycToken,
-  userRawData: Object
+  userRawData: Object,
 }) => Promise<KycRecord>
 
 /**
@@ -189,7 +190,7 @@ export type UpdateKycHandler = ({
  * @returns {Promise<MobileAppKycRecordStatus>}
  */
 export type QueryKycStatusHandler = ({
-  kycRecord: KycRecord
+  kycRecord: KycRecord,
 }) => Promise<MobileAppKycRecordStatus>
 
 /**
@@ -207,7 +208,7 @@ export type ReSubmitCheckHandler = ({
   kycProfile: KycProfile,
   kycRecord: KycRecord,
   kycToken: KycToken,
-  payload: BlockpassMobileResponsePayload
+  payload: BlockpassMobileResponsePayload,
 }) => Promise<BlockpassMobileResponsePayload>
 
 /**
@@ -225,7 +226,7 @@ export type GenerateSsoPayloadHandler = ({
   kycProfile: KycProfile,
   kycRecord: KycRecord,
   kycToken: KycToken,
-  payload: Object
+  payload: Object,
 }) => Promise<BlockpassMobileResponsePayload>
 
 /**
@@ -243,7 +244,7 @@ export type GenerateRedirectPayloadHandler = ({
   kycProfile: KycProfile,
   kycRecord: KycRecord,
   kycToken: KycToken,
-  payload: Object
+  payload: Object,
 }) => Promise<any>
 
 /**
@@ -267,5 +268,15 @@ export type ConstructorParams = {
   encodeSessionData?: ?(payload: any) => string,
   decodeSessionData?: ?(payload: string) => any,
   debug: boolean,
-  autoFetchMetadata: boolean
+  autoFetchMetadata: boolean,
+}
+
+/**
+ * --------------------------------------------------------
+ * Blockpass Certpromise Response object
+ * @type {object}
+ */
+export type CertPromiseResponse = {
+  slug: string,
+  raw: string,
 }

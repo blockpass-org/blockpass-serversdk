@@ -7,8 +7,8 @@ const { KYCModel, FileStorage } = require('./SimpleStorage')
 
 const config = {
   BASE_URL: 'https://sandbox-api.blockpass.org',
-  BLOCKPASS_CLIENT_ID: 'developer_service',
-  BLOCKPASS_SECRET_ID: 'developer_service'
+  BLOCKPASS_CLIENT_ID: '<your client id>',
+  BLOCKPASS_SECRET_ID: '<your client secret>'
 }
 
 // -------------------------------------------------------------------------
@@ -27,7 +27,7 @@ async function createKyc ({ kycProfile, refId }) {
     smartContractId,
     isSynching
   })
-
+  newIns.status = 'waiting'
   newIns.certs = serverSdk.certs.reduce((acc, key) => {
     acc[key] = {
       slug: key,
@@ -44,13 +44,15 @@ async function createKyc ({ kycProfile, refId }) {
     return acc
   }, {})
 
+  newIns.certPromises = {}
+
   return await newIns.save()
 }
 
 async function updateKyc ({ kycRecord, kycProfile, kycToken, userRawData }) {
   const { id, smartContractId, rootHash, isSynching } = kycProfile
 
-  const jobs = Object.keys(userRawData).map(async key => {
+  const jobs = Object.keys(userRawData).map(async (key) => {
     const metaData = userRawData[key]
 
     if (metaData.type === 'string') {
@@ -61,6 +63,8 @@ async function updateKyc ({ kycRecord, kycProfile, kycToken, userRawData }) {
           status: 'received',
           comment: ''
         })
+      } else if (metaData.isCertPromise) {
+        return (kycRecord.certPromises[key] = metaData.value)
       } else {
         return (kycRecord.identities[key] = {
           slug: key,
@@ -118,6 +122,7 @@ async function generateSsoPayload ({
 }
 
 async function queryKycStatus ({ kycRecord }) {
+  const { allowCertPromise } = serverSdk
   const { status, identities, certs } = kycRecord
 
   // status meaning:
@@ -127,7 +132,7 @@ async function queryKycStatus ({ kycRecord }) {
   //     => Mobile app will asking user to update
   //  - "missing": data fields missing - Uploading error
   //     => Mobile app will asking user to re-upload
-  const identitiesStatus = Object.keys(identities).map(key => {
+  const identitiesStatus = Object.keys(identities).map((key) => {
     const itm = identities[key]
     const { slug, status, comment } = itm
     return {
@@ -137,7 +142,7 @@ async function queryKycStatus ({ kycRecord }) {
     }
   })
 
-  const certsStatus = Object.keys(certs).map(key => {
+  const certsStatus = Object.keys(certs).map((key) => {
     const itm = certs[key]
     const { slug, status } = itm
     return {
@@ -148,6 +153,7 @@ async function queryKycStatus ({ kycRecord }) {
 
   return {
     status,
+    allowCertPromise,
     message: 'This process usually take 2 working days',
     createdDate: new Date(),
     identities: identitiesStatus,
@@ -180,7 +186,7 @@ router.get('/', (req, res) => {
 // -------------------------------------------------------------------------
 // Api
 // -------------------------------------------------------------------------
-router.post('/blockpass/api/uploadData', upload.any(), async (req, res) => {
+router.post('/blockpass/api/upload', upload.any(), async (req, res) => {
   try {
     const { accessToken, slugList, ...userRawFields } = req.body
     const files = req.files || []
@@ -188,19 +194,22 @@ router.post('/blockpass/api/uploadData', upload.any(), async (req, res) => {
     // Flattern user data
     const userRawData = {}
 
-    Object.keys(userRawFields).forEach(key => {
+    Object.keys(userRawFields).forEach((key) => {
       const originalKey = key
       const isCert = key.startsWith('[cer]')
+      const isCertPromise = key.startsWith('[cerPromise]')
       if (isCert) key = key.slice('[cer]'.length)
+      else if (isCertPromise) key = key.slice('[cerPromise]'.length)
 
       userRawData[key] = {
         type: 'string',
         value: userRawFields[originalKey],
-        isCert
+        isCert,
+        isCertPromise
       }
     })
 
-    files.forEach(itm => {
+    files.forEach((itm) => {
       userRawData[itm.fieldname] = {
         type: 'file',
         ...itm
@@ -334,7 +343,55 @@ router.post('/util/sendPn', async (req, res) => {
     })
   }
 })
+// -------------------------------------------------------------------------
+router.post('/blockpass/api/webhook', async (req, res) => {
+  try {
+    console.log('webhook', req.body, req.headers)
 
+    // Check HMAC
+
+    // Processing events
+    const action = req.body.action
+    switch (action) {
+      case 'certPormise.resolved': {
+        const { certPromisesId, blockpassID } = req.body.data
+        const kycRecord = await KYCModel.findOne({ blockPassID: blockpassID })
+        const { bpToken } = kycRecord
+        const fetCpResponse = await serverSdk.pullCertPromise({
+          bpToken,
+          certPromiseId: certPromisesId
+        })
+
+        if (!fetCpResponse) {
+          return res.status(404).json({
+            err: 404,
+            msg: 'oop!'
+          })
+        }
+
+        const { slug, raw } = fetCpResponse
+        kycRecord.certs[slug] = {
+          slug: slug,
+          value: raw,
+          status: 'received',
+          comment: ''
+        }
+        kycRecord.status = 'approved'
+        await kycRecord.save()
+        console.log('resolved cp', certPromisesId)
+        break
+      }
+    }
+
+    return res.json({ status: 'success' })
+  } catch (ex) {
+    console.error(ex)
+    return res.status(500).json({
+      err: 500,
+      msg: ex.message
+    })
+  }
+})
 // -------------------------------------------------------------------------
 //  Blockpass Server SDK
 // -------------------------------------------------------------------------
@@ -353,18 +410,18 @@ const serverSdk = new ServerSDK({
 })
 
 // Sdk loaded
-serverSdk.once('onLoaded', _ => {
+serverSdk.once('onLoaded', (_) => {
   const port = process.env.SERVER_PORT || 3000
   let server = app.listen(port, '0.0.0.0', function () {
     console.log(`Listening on port ${port}...`)
   })
 
   // gracefull shutdown
-  app.close = _ => server.close()
+  app.close = (_) => server.close()
 })
 
 // Sdk error
-serverSdk.once('onError', err => {
+serverSdk.once('onError', (err) => {
   console.error(err)
   process.exit(1)
 })

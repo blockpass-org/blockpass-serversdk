@@ -11,9 +11,14 @@ const EventEmitter = require('events');
 const BlockPassHttpProvider = require('./BlockPassHttpProvider');
 const jwt = require('jsonwebtoken');
 
+var _require = require('lodash');
+
+const get = _require.get;
+
 /**
  * @class Class ServerSdk
  */
+
 class ServerSdk extends EventEmitter {
 
   /**
@@ -116,6 +121,7 @@ class ServerSdk extends EventEmitter {
         return itm.slug;
       });
       _this.certs = _this.serviceMetaData.certRequirement;
+      _this.allowCertPromise = !!_this.serviceMetaData.allowCertPromise;
 
       return _this.emit('onLoaded');
     })();
@@ -337,7 +343,8 @@ class ServerSdk extends EventEmitter {
 
       if (!kycRecord) {
         return _extends({
-          status: 'notFound'
+          status: 'notFound',
+          allowCertPromise: _this5.allowCertPromise
         }, _this5._serviceRequirement());
       }
 
@@ -456,7 +463,10 @@ class ServerSdk extends EventEmitter {
 
   // -----------------------------------------------------------------------------------
   /**
-   * Reject a given Certificate
+   * Send user notification
+   *  - IF user registerPN -> PN will send
+   *  - User will recieved message in their inbox
+   * @param {Object} params
    */
   userNotify({
     message,
@@ -475,6 +485,7 @@ class ServerSdk extends EventEmitter {
   // -----------------------------------------------------------------------------------
   /**
    * Deactivate connection with user
+   * @param {Object} params
    */
   deactivateUser({ bpToken }) {
     var _this8 = this;
@@ -482,6 +493,71 @@ class ServerSdk extends EventEmitter {
     return _asyncToGenerator(function* () {
       const res = yield _this8.blockPassProvider.deactivateUser(bpToken);
       return res;
+    })();
+  }
+
+  // -----------------------------------------------------------------------------------
+  /**
+   * Check dose SHA256(CertificateRawString) still valid or not (revoked by issuer)
+   *
+   * @typedef {Object} Args
+   * @param {KycToken} Args.bpToken
+   * @param {String} Args.certHash
+   */
+  checkCertificateHash({
+    bpToken,
+    certHash
+  }) {
+    var _this9 = this;
+
+    return _asyncToGenerator(function* () {
+      try {
+        const response = yield _this9.blockPassProvider.checkCertificateHash({
+          bpToken,
+          certHash
+        });
+        if (response) {
+          const status = get(response, 'res.data.status');
+          return status !== 'invalid';
+        }
+      } catch (error) {
+        console.log('[ServerSDK] error in checkCertificateHash', error);
+        throw error;
+      }
+    })();
+  }
+
+  // -----------------------------------------------------------------------------------
+  /**
+   *  Fetch all certPromise and their status for record
+   *
+   */
+  fetchCertPromise({ bpToken }) {
+    var _this10 = this;
+
+    return _asyncToGenerator(function* () {
+      const response = yield _this10.blockPassProvider.fetchCertPromise(bpToken);
+      if (response) {
+        return response.res.data;
+      }
+    })();
+  }
+
+  /**
+   * Pull certPromise data
+   *
+   */
+  pullCertPromise({
+    bpToken,
+    certPromiseId
+  }) {
+    var _this11 = this;
+
+    return _asyncToGenerator(function* () {
+      const response = yield _this11.blockPassProvider.pullCertPromise(bpToken, certPromiseId);
+      if (response) {
+        return response.res.data;
+      }
     })();
   }
 

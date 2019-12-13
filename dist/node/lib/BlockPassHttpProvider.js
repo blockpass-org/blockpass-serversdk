@@ -382,6 +382,94 @@ class BlockpassHttpProvider {
       }
     })();
   }
+
+  fetchCertPromise(bpToken) {
+    var _this13 = this;
+
+    return _asyncToGenerator(function* () {
+      // check refresh bpToken
+      bpToken = yield _this13._checkAndRefreshAccessToken(bpToken);
+      const _baseUrl = _this13._baseUrl;
+
+
+      try {
+        const certPromiseResponse = yield request.get(_baseUrl + api.FETCH_CERT_PROMISE_PATH).set({
+          Authorization: bpToken.access_token
+        });
+
+        if (certPromiseResponse.status !== 200) {
+          console.log('[BlockPass] fetchCertPromise Error', certPromiseResponse.text);
+          return null;
+        }
+
+        return {
+          res: certPromiseResponse.body,
+          bpToken
+        };
+      } catch (error) {
+        console.error(error);
+        return null;
+      }
+    })();
+  }
+
+  pullCertPromise(bpToken, certPromiseId) {
+    var _this14 = this;
+
+    return _asyncToGenerator(function* () {
+      // check refresh bpToken
+      bpToken = yield _this14._checkAndRefreshAccessToken(bpToken);
+      const _baseUrl = _this14._baseUrl;
+
+
+      try {
+        const certPromiseResponse = yield request.get(_baseUrl + api.PULL_CERT_PROMISE_PATH + '/' + certPromiseId).set({
+          Authorization: bpToken.access_token
+        });
+
+        if (certPromiseResponse.status !== 200) {
+          console.log('[BlockPass] pullCertPromise Error', certPromiseResponse.text);
+          return null;
+        }
+
+        return {
+          res: certPromiseResponse.body,
+          bpToken
+        };
+      } catch (error) {
+        console.error(error);
+        return null;
+      }
+    })();
+  }
+
+  checkCertificateHash({ bpToken, certHash }) {
+    var _this15 = this;
+
+    return _asyncToGenerator(function* () {
+      // check refresh bpToken
+      bpToken = yield _this15._checkAndRefreshAccessToken(bpToken);
+      const _baseUrl = _this15._baseUrl;
+
+      try {
+        const certHashResponse = yield request.get(_baseUrl + api.CHECK_CERT_HASH_PATH + '/' + certHash).set({
+          Authorization: bpToken.access_token
+        });
+        if (certHashResponse.status !== 200) {
+          console.log('[BlockPass] checkCertificateHash Error', certHashResponse.text);
+          return null;
+        }
+
+        return {
+          res: certHashResponse.body,
+          bpToken
+        };
+      } catch (error) {
+        console.error(error);
+        throw error;
+      }
+    })();
+  }
 }
 
 module.exports = BlockpassHttpProvider;
