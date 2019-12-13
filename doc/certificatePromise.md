@@ -140,15 +140,15 @@ router.post('/blockpass/api/webhook', async (req, res) => {
 }
 ```
 
-## Appendis - CertPromise resolve
+## Appendis - CertPromise pull
 
-Method: GET
-Path: `/api/3rdService/merchant/promise/pull/<certPromiseId>`
-Header:
+- Method: GET
+- Path: `/api/3rdService/merchant/promise/pull/<certPromiseId>`
+- Header:
 
-- Authorization: `Blockpass accesstoken for record`
+  - Authorization: `Blockpass accessToken for record`
 
-Response:
+- Response:
 
 ```javascript
 {
@@ -159,4 +159,6 @@ Response:
 
 Note:
 
-- After Pull successfully (webhook response status `200`), Blockpass Server will delete raw data and deactivate `certPromiseId`. If we trying to perform request after that -> `404` error will response
+- Right after Merchant pull certificate, **Blockpass Server will delete data and deactivate `certPromiseId`**.
+
+  If we trying to perform request after that -> status `404`
